@@ -479,8 +479,8 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
   /* ── TOAST sobre bottom nav ── */
   #toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));right:14px;left:14px;text-align:center;}
 
-  /* ── IA FAB: más arriba para no tapar bottom nav ── */
-  #ia-fab{bottom:calc(72px + env(safe-area-inset-bottom,0px));}
+  /* ── IA FAB: encima del bottom nav con margen ── */
+  #ia-fab{bottom:calc(68px + env(safe-area-inset-bottom,0px));right:16px;width:48px;height:48px;}
 
   /* ── CONTROLES: wrap limpio ── */
   .controls{padding:10px 12px;gap:6px;}
@@ -492,7 +492,7 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
   .month-num{font-size:13px;}
 
   /* ── IA panel ── */
-  #ia-panel{width:100%!important;right:0!important;left:0!important;bottom:calc(60px + env(safe-area-inset-bottom,0px))!important;border-radius:20px 20px 0 0;max-height:75vh;}
+  #ia-panel{width:100%!important;right:0!important;left:0!important;bottom:calc(120px + env(safe-area-inset-bottom,0px))!important;border-radius:20px 20px 0 0;max-height:72vh;}
 
   /* ── Ventas TPV: grid 2 cols en móvil ── */
   #tpv-products-grid{grid-template-columns:repeat(2,1fr)!important;}
