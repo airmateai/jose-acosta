@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jose Acosta">
 <title>Airmate · Jose Acosta</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -385,17 +389,124 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
 .mob-hamburger{display:none;background:none;border:none;padding:6px;cursor:pointer;color:var(--txt2);}
 
 @media(max-width:768px){
-  .sidebar{transform:translateX(-100%);transition:transform .25s;position:fixed;display:flex;z-index:200;}
-  .sidebar.open{transform:translateX(0);}
+  /* ── BASE ── */
+  html{-webkit-text-size-adjust:100%;}
+  body{font-size:15px;}
+
+  /* ── SIDEBAR como drawer ── */
+  .sidebar{transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);position:fixed;display:flex;z-index:200;width:280px;}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.5);}
+
+  /* ── MAIN: sin margen lateral, sin marco dorado ── */
   .main{margin-left:0;}
-  .content{padding:14px;padding-bottom:80px;}
-  .dash-grid{grid-template-columns:1fr;}
-  .crm-form-row{grid-template-columns:1fr;}
+  .main::before{display:none;}
+  .corner-ornament{display:none;}
+
+  /* ── CONTENT: padding cómodo + espacio para bottom nav ── */
+  .content{padding:16px 14px 88px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));}
+  .content::after{left:0;font-size:9px;}
+
+  /* ── TOPBAR: más limpio en móvil ── */
+  .topbar{height:52px;padding:0 14px;position:sticky;top:0;z-index:50;}
+  .topbar-title{font-size:16px;font-weight:700;}
+  .topbar-btn span{display:none;}
+  .topbar-btn{padding:7px 9px;}
+
+  /* ── BOTTOM NAV: app nativa ── */
+  #mob-bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:var(--nav);
+    border-top:1px solid rgba(196,163,90,.2);
+    z-index:98;
+    height:calc(60px + env(safe-area-inset-bottom,0px));
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    box-shadow:0 -4px 20px rgba(0,0,0,.3);
+  }
+  .mob-nav-btn{flex:1;font-size:10px;font-weight:700;gap:4px;padding:8px 2px;}
+  .mob-nav-btn svg{width:22px;height:22px;}
+  .mob-nav-btn.active{color:var(--acc);}
+  .mob-nav-btn.active svg{filter:drop-shadow(0 0 6px rgba(196,163,90,.6));}
+
+  /* ── HAMBURGER ── */
   .mob-hamburger{display:flex;align-items:center;justify-content:center;}
-  #mob-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--nav);border-top:1px solid rgba(255,255,255,.08);z-index:98;height:60px;}
-  #toast{bottom:72px;}
-  #crm-modal-box{max-height:95vh;border-radius:14px 14px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;}
+
+  /* ── STATS: 2 columnas en móvil ── */
+  .stats-grid{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+  .stat-card{padding:14px 12px 12px;}
+  .stat-val{font-size:22px;}
+  .stat-label{font-size:10px;}
+
+  /* ── DASHBOARD ── */
+  .dash-grid{grid-template-columns:1fr;gap:12px;}
+
+  /* ── CARDS ── */
+  .card{margin-bottom:12px;border-radius:12px;}
+  .card-hd{padding:12px 14px;}
+  .card-hd-title{font-size:15px;}
+
+  /* ── PAGE HEADER ── */
+  .page-hd{margin-bottom:16px;}
+  .page-title{font-size:20px;}
+  .page-hd-row{flex-wrap:wrap;gap:10px;}
+
+  /* ── BOTONES en cabecera: más pequeños ── */
+  .page-hd-row .btn{font-size:13px;padding:8px 12px;}
+
+  /* ── TABLAS → lista en móvil ── */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:520px;}
+
+  /* ── PIPELINE: scroll horizontal natural ── */
+  .pipeline{gap:10px;padding-bottom:8px;}
+  .pipe-col{min-width:240px;}
+
+  /* ── KANBAN ── */
+  .crm-kanban{gap:10px;padding-bottom:16px;}
+  .crm-kcol{min-width:240px;width:240px;}
+
+  /* ── FORM ROWS: 1 col ── */
+  .crm-form-row{grid-template-columns:1fr;}
+  .modal-grid{grid-template-columns:1fr;}
+
+  /* ── MODALES: bottom sheet ── */
+  .modal{border-radius:20px 20px 0 0;max-width:100%;position:fixed;bottom:0;left:0;right:0;max-height:92vh;}
+  #modal-overlay{padding:0;align-items:flex-end;}
+  #crm-modal-box{max-height:95vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;width:100%;max-width:100%;}
   #crm-overlay{align-items:flex-end;}
+  .modal-hd{padding:14px 18px 12px;}
+  .modal-body{padding:14px 18px;}
+
+  /* ── TOAST sobre bottom nav ── */
+  #toast{bottom:calc(70px + env(safe-area-inset-bottom,0px));right:14px;left:14px;text-align:center;}
+
+  /* ── IA FAB: más arriba para no tapar bottom nav ── */
+  #ia-fab{bottom:calc(72px + env(safe-area-inset-bottom,0px));}
+
+  /* ── CONTROLES: wrap limpio ── */
+  .controls{padding:10px 12px;gap:6px;}
+  .search-input{font-size:15px;}
+
+  /* ── CALENDAR: vista mes por defecto, día col más estrecha ── */
+  .day-col{min-width:70px;}
+  .month-cell{min-height:60px;padding:5px;}
+  .month-num{font-size:13px;}
+
+  /* ── IA panel ── */
+  #ia-panel{width:100%!important;right:0!important;left:0!important;bottom:calc(60px + env(safe-area-inset-bottom,0px))!important;border-radius:20px 20px 0 0;max-height:75vh;}
+
+  /* ── Ventas TPV: grid 2 cols en móvil ── */
+  #tpv-products-grid{grid-template-columns:repeat(2,1fr)!important;}
+
+  /* ── Tipografía general más legible ── */
+  td{font-size:14px;padding:10px 12px;}
+  th{font-size:11px;padding:8px 12px;}
+  .btn{font-size:14px;}
+  .btn-sm{font-size:12px;}
+  .tag{font-size:12px;}
+
+  /* ── Finanzas charts ── */
+  .igic-box{padding:14px 16px;}
+  .igic-row{font-size:14px;}
 }
 @media print{
   body>*{display:none!important;}
