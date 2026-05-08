@@ -2476,6 +2476,7 @@ async function crmLoadFacturas(){
         <button class="btn btn-ghost btn-xs" onclick="crmViewFactura('${f.id}',${i})">👁</button>
         ${f.type==='presupuesto'?`<button class="btn btn-xs" style="background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe" onclick="convertirAFactura('${f.id}')">→ Factura</button>`:''}
         ${f.status!=='pagado'&&f.status!=='cancelado'?`<button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="marcarPagada('${f.id}')">✓ Cobrada</button>`:''}
+        ${f.type==='factura'?(f.verifactu_csv?`<span class="tag" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px;padding:2px 6px" title="Registrada en AEAT · CSV: ${esc(f.verifactu_csv)}">✅ AEAT</span>`:`<button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="verifactuRegistrar('${f.id}')">📋 Verifactu</button>`):''}
         <button class="btn btn-ghost btn-xs" onclick="crmEditFactura('${f.id}')">✏</button>
         <button class="btn btn-danger btn-xs" onclick="crmDeleteFactura('${f.id}')">🗑</button>
       </td>
@@ -2561,6 +2562,70 @@ async function crmSaveFactura(){
   crmCloseModal();crmLoadFacturas();showToast('✓ Documento guardado');
 }
 async function crmDeleteFactura(id){if(!confirm('¿Eliminar?'))return;await _sb.from('crm_invoices').delete().eq('id',id);crmLoadFacturas();}
+
+// ── VERIFACTU ──────────────────────────────────────────────────────────────
+// Integración con verifactuapi.es — registra facturas en AEAT en tiempo real
+async function verifactuRegistrar(id){
+  const f=_crmFacturas.find(x=>x.id===id);
+  if(!f){showToast('❌ Factura no encontrada');return;}
+  if(f.type!=='factura'){showToast('⚠ Solo se registran facturas, no presupuestos');return;}
+  if(f.verifactu_csv){if(!confirm('Esta factura ya fue registrada en Verifactu. ¿Registrar de nuevo?'))return;}
+
+  const biz=getBizInfo();
+  const apiKey=biz.verifactu_key||'';
+  if(!apiKey){
+    showToast('⚠ Configura tu API Key de Verifactu en ⚙ Ajustes del negocio');
+    return;
+  }
+
+  const items=Array.isArray(f.items)?f.items:[];
+  const total=f.total||items.reduce((s,l)=>s+(parseFloat(l.qty||1)*parseFloat(l.price||0)),0);
+  const ivaPct=biz.iva_pct||0;
+  const base=Math.round(total/(1+ivaPct/100)*100)/100;
+  const cuota=Math.round((total-base)*100)/100;
+  const year=f.issue_date?f.issue_date.slice(0,4):new Date().getFullYear();
+  const num=f.invoice_number||`FAC-${year}-001`;
+
+  const payload={
+    "NIF_Emisor": biz.cif||"",
+    "Nombre_Emisor": biz.name||BIZ_NAME,
+    "NumSerie": num,
+    "Fecha": f.issue_date||new Date().toISOString().split('T')[0],
+    "TipoFactura": "F1",
+    "DescripcionOperacion": items.map(l=>l.desc||'Servicio').join(', ').slice(0,500)||"Servicios",
+    "BaseImponible": base,
+    "TipoImpositivo": ivaPct,
+    "CuotaRepercutida": cuota,
+    "ImporteTotal": total,
+    "NIF_Receptor": f.client_nif||"",
+    "Nombre_Receptor": f.client_name||""
+  };
+
+  showToast('⏳ Registrando en AEAT...');
+  try {
+    const res=await fetch('https://api.verifactuapi.es/v1/invoice',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+apiKey,'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json();
+    if(!res.ok){
+      console.error('Verifactu error',data);
+      showToast('❌ Error Verifactu: '+(data.message||data.error||res.status));
+      return;
+    }
+    // Guardar CSV y QR en la factura
+    const csv=data.csv||data.CSV||data.huella||'';
+    const qrUrl=data.qr_url||data.qrUrl||data.url_qr||'';
+    await _sb.from('crm_invoices').update({verifactu_csv:csv,verifactu_qr:qrUrl,verifactu_at:new Date().toISOString()}).eq('id',id);
+    if(f){f.verifactu_csv=csv;f.verifactu_qr=qrUrl;}
+    crmLoadFacturas();
+    showToast('✅ Factura registrada en AEAT · CSV: '+csv.slice(0,20)+'…');
+  } catch(e) {
+    console.error('Verifactu fetch error',e);
+    showToast('❌ Error de conexión con Verifactu');
+  }
+}
 
 // ── HOLDED SYNC ────────────────────────────────────────────────────────────
 async function holdedSync(endpoint, payload){
@@ -2933,6 +2998,15 @@ function crmViewFactura(id,idx=0){
     </div>
 
     ${biz.payment_terms?`<div style="margin-top:16px;padding:14px 18px;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;color:#64748b"><strong style="color:#0f172a">Condiciones de pago:</strong> ${esc(biz.payment_terms)}</div>`:''}
+    ${f.verifactu_csv?`
+    <div style="margin-top:16px;padding:14px 18px;border:1.5px solid #a7f3d0;border-radius:8px;background:#f0fdf4;display:flex;align-items:center;gap:16px">
+      ${f.verifactu_qr?`<img src="${esc(f.verifactu_qr)}" style="width:72px;height:72px;flex-shrink:0;border-radius:4px" alt="QR Verifactu"/>`:''}
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">✅ Factura Verificada · AEAT Verifactu</div>
+        <div style="font-size:10px;color:#065f46;font-family:monospace;word-break:break-all">${esc(f.verifactu_csv)}</div>
+        ${f.verifactu_at?`<div style="font-size:10px;color:#6ee7b7;margin-top:2px">Registrada: ${new Date(f.verifactu_at).toLocaleString('es-ES')}</div>`:''}
+      </div>
+    </div>`:''}
     <div style="margin-top:16px;text-align:center;font-size:10px;color:#cbd5e1">Generado con Airmate · ${new Date().toLocaleDateString('es-ES')}</div>
   </div>`;
   document.getElementById('crm-print-overlay').classList.add('open');
@@ -2961,6 +3035,7 @@ function openBizSettings(){
     <div class="crm-form-group"><label class="crm-form-label">Condiciones de pago (texto en facturas)</label><input class="crm-form-ctrl" id="biz-payment-terms" value="${esc(b.payment_terms||'50% anticipo al confirmar el encargo. 50% restante en la entrega.')}"/></div>
     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px">Integraciones</div>
     <div class="crm-form-group"><label class="crm-form-label">Holded API Key <span style="font-weight:400;color:#94a3b8">(para sync de facturas y stock)</span></label><input class="crm-form-ctrl" id="biz-holded" type="password" value="${esc(b.holded_key||'')}"/></div>
+    <div class="crm-form-group"><label class="crm-form-label">Verifactu API Key <span style="font-weight:400;color:#94a3b8">(verifactuapi.es — registro AEAT en tiempo real)</span></label><input class="crm-form-ctrl" id="biz-verifactu" type="password" value="${esc(b.verifactu_key||'')}"/></div>
     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px">Seguridad</div>
     <div class="crm-form-row">
       <div class="crm-form-group"><label class="crm-form-label">Nueva contraseña</label><input class="crm-form-ctrl" id="biz-newpass" type="password" placeholder="Dejar vacío para no cambiar"/></div>
@@ -2969,7 +3044,7 @@ function openBizSettings(){
     `<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="saveBizSettings()">Guardar</button>`);
 }
 async function saveBizSettings(){
-  const b={name:cv('biz-name'),address:cv('biz-addr'),phone:cv('biz-tel'),cif:cv('biz-cif'),email:cv('biz-email'),iva_pct:parseInt(cv('biz-iva'))||0,payment_terms:cv('biz-payment-terms')||null,holded_key:cv('biz-holded')||null};
+  const b={name:cv('biz-name'),address:cv('biz-addr'),phone:cv('biz-tel'),cif:cv('biz-cif'),email:cv('biz-email'),iva_pct:parseInt(cv('biz-iva'))||0,payment_terms:cv('biz-payment-terms')||null,holded_key:cv('biz-holded')||null,verifactu_key:cv('biz-verifactu')||null};
   localStorage.setItem('biz_info_'+BIZ_SLUG,JSON.stringify(b));
   // Cambio de contraseña
   const np=cv('biz-newpass'),np2=cv('biz-newpass2');

@@ -99,3 +99,9 @@ CREATE TABLE IF NOT EXISTS ja_ventas (
 );
 ALTER TABLE ja_ventas ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ja_ventas_open" ON ja_ventas FOR ALL USING (true) WITH CHECK (true);
+
+-- ── VERIFACTU — añadir columnas a crm_invoices (tabla existente del panel) ──
+ALTER TABLE crm_invoices ADD COLUMN IF NOT EXISTS verifactu_csv text;
+ALTER TABLE crm_invoices ADD COLUMN IF NOT EXISTS verifactu_qr text;
+ALTER TABLE crm_invoices ADD COLUMN IF NOT EXISTS verifactu_at timestamptz;
+ALTER TABLE crm_invoices ADD COLUMN IF NOT EXISTS client_nif text;
