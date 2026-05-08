@@ -3512,17 +3512,8 @@ async function calcVencimientos(){
 
 // ── FINANZAS ───────────────────────────────────────────────────────────────
 // Datos de ejemplo para demo
-const _FIN_DEMO_FACTURAS=[
-  {id:'d1',client_name:'Roberto Sánchez', total:850, status:'pagado',  issue_date:'2026-05-08', type:'factura'},
-  {id:'d2',client_name:'Alejandro Vega',  total:480, status:'enviado', issue_date:'2026-05-22', type:'factura'},
-  {id:'d3',client_name:'Pedro Morales',   total:290, status:'borrador',issue_date:'2026-05-27', type:'presupuesto'},
-  // Mes anterior (abril) para comparativa
-  {id:'d4',client_name:'Roberto Sánchez', total:720, status:'pagado',  issue_date:'2026-04-15', type:'factura'},
-];
-const _FIN_DEMO_COMPRAS=[
-  {date:'2026-05-02', concepto:'Tela lana merino', importe:180},
-  {date:'2026-05-15', concepto:'Forro seda',        importe:120},
-];
+const _FIN_DEMO_FACTURAS=[];
+const _FIN_DEMO_COMPRAS=[];
 
 function renderFinanzas(){
   try {
@@ -3919,32 +3910,54 @@ function finanzasAnimar(){
 }
 
 // ── VENTAS / TPV ───────────────────────────────────────────────────────────
-const TPV_PRODUCTOS = [
-  {id:1, nombre:'Traje a medida completo',     categoria:'Trajes',        precio:850,  stock:4,  emoji:'🎩'},
-  {id:2, nombre:'Chaqueta sport lana',         categoria:'Trajes',        precio:420,  stock:6,  emoji:'🧥'},
-  {id:3, nombre:'Pantalón sastre',             categoria:'Trajes',        precio:180,  stock:8,  emoji:'👖'},
-  {id:4, nombre:'Camisa Oxford medida',        categoria:'Complementos',  precio:95,   stock:12, emoji:'👔'},
-  {id:5, nombre:'Corbata seda italiana',       categoria:'Complementos',  precio:65,   stock:15, emoji:'👔'},
-  {id:6, nombre:'Pañuelo de bolsillo',         categoria:'Complementos',  precio:28,   stock:20, emoji:'🎀'},
-  {id:7, nombre:'Tela lana merino (metro)',    categoria:'Telas',         precio:38,   stock:30, emoji:'🧶'},
-  {id:8, nombre:'Tela lino premium (metro)',   categoria:'Telas',         precio:24,   stock:25, emoji:'🧶'},
-  {id:9, nombre:'Cinturón cuero artesanal',    categoria:'Accesorios',    precio:75,   stock:10, emoji:'👜'},
-  {id:10,nombre:'Gemelos plata',               categoria:'Accesorios',    precio:45,   stock:8,  emoji:'✨'},
-  {id:11,nombre:'Oxford cuero liso negro',     categoria:'Zapatos',       precio:195,  stock:6,  emoji:'👞'},
-  {id:12,nombre:'Derby marrón vintage',        categoria:'Zapatos',       precio:175,  stock:5,  emoji:'👞'},
-  {id:13,nombre:'Monk strap piel tostada',     categoria:'Zapatos',       precio:220,  stock:4,  emoji:'👞'},
-  {id:14,nombre:'Chelsea boot ante gris',      categoria:'Zapatos',       precio:185,  stock:5,  emoji:'👢'},
-  {id:15,nombre:'Mocasín borla burdeos',       categoria:'Zapatos',       precio:160,  stock:7,  emoji:'🥿'},
-];
-
-const TPV_HISTORIAL = [
-  {id:'V001',fecha:'05/05/2026',hora:'11:30',productos:'Traje a medida + Camisa',total:945,pago:'tarjeta',  cliente:'Roberto Sánchez'},
-  {id:'V002',fecha:'03/05/2026',hora:'10:00',productos:'Tela lana x3 metros',   total:114,pago:'transferencia',cliente:'Alejandro Vega'},
-  {id:'V003',fecha:'01/05/2026',hora:'09:30',productos:'Oxford cuero + Cinturón',total:270,pago:'efectivo', cliente:'Pedro Morales'},
-];
-
+// TPV — productos cargados de Supabase (crm_inventory)
+var TPV_PRODUCTOS = [];
+var TPV_HISTORIAL = [];
 var _tpvCarrito = [];
 var _tpvPago = 'efectivo';
+
+function tpvEmojiCategoria(cat) {
+  const m = {'Zapatos':'👞','Corbatas':'👔','Calcetines':'🧦','Pajaritas':'🎀',
+    'Tirantes':'✨','Complementos':'🎩','Polos':'👕','Chalecos':'🧥',
+    'Trajes':'🤵','Telas':'🧶','Accesorios':'💎'};
+  return m[cat] || '🧵';
+}
+
+async function tpvLoadProductos() {
+  const {data} = await _sb.from('crm_inventory')
+    .select('*').eq('business_slug', BIZ_SLUG)
+    .order('category').order('name');
+  TPV_PRODUCTOS = (data||[]).map((p,i) => ({
+    id: p.id,
+    nombre: p.name,
+    categoria: p.category || 'General',
+    precio: p.precio_venta || 0,
+    stock: p.stock || 0,
+    emoji: tpvEmojiCategoria(p.category)
+  }));
+  // Actualizar select de categorías
+  const cats = [...new Set(TPV_PRODUCTOS.map(p=>p.categoria))];
+  const sel = document.getElementById('tpv-cat');
+  if (sel) {
+    sel.innerHTML = '<option value="">Todos</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  }
+  tpvRenderCatalogo();
+}
+
+async function tpvLoadHistorial() {
+  const {data} = await _sb.from('ja_ventas')
+    .select('*').eq('biz_slug', BIZ_SLUG)
+    .order('created_at', {ascending:false}).limit(100);
+  TPV_HISTORIAL = (data||[]).map(v => ({
+    id: v.id.slice(0,8).toUpperCase(),
+    fecha: new Date(v.created_at).toLocaleDateString('es-ES'),
+    hora: new Date(v.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+    productos: (v.lineas||[]).map(l=>l.nombre+(l.qty>1?'×'+l.qty:'')).join(', '),
+    total: v.total || 0,
+    pago: v.metodo_pago || 'efectivo',
+    cliente: v.cliente_nombre || '—'
+  }));
+}
 
 function tpvVista(v) {
   document.getElementById('tpv-caja').style.display = v==='caja'?'grid':'none';
@@ -4037,18 +4050,44 @@ function tpvSetPago(tipo) {
   });
 }
 
-function tpvCobrar() {
+async function tpvCobrar() {
   if(_tpvCarrito.length===0){showToast('Añade productos al ticket');return;}
   var sub=_tpvCarrito.reduce(function(s,c){return s+c.precio*c.qty;},0);
-  var total=(sub*1.07).toFixed(2);
+  var igic=sub*0.07;
+  var total=sub+igic;
+  var lineas=_tpvCarrito.map(function(c){return {id:c.id,nombre:c.nombre,precio:c.precio,qty:c.qty};});
   var prods=_tpvCarrito.map(function(c){return c.nombre+(c.qty>1?' ×'+c.qty:'');}).join(', ');
-  var nueva={id:'V'+(TPV_HISTORIAL.length+1).toString().padStart(3,'0'),fecha:new Date().toLocaleDateString('es-ES'),hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),productos:prods,total:parseFloat(total),pago:_tpvPago,cliente:'—'};
+
+  // Guardar en Supabase
+  const {data:venta,error} = await _sb.from('ja_ventas').insert({
+    biz_slug: BIZ_SLUG,
+    lineas: lineas,
+    subtotal: Math.round(sub*100)/100,
+    igic: Math.round(igic*100)/100,
+    total: Math.round(total*100)/100,
+    metodo_pago: _tpvPago,
+    cliente_nombre: null
+  }).select().single();
+
+  if(error){ showToast('⚠️ Error al guardar venta'); console.error(error); return; }
+
+  // Descontar stock
+  for(var c of _tpvCarrito){
+    var p=TPV_PRODUCTOS.find(function(x){return x.id===c.id;});
+    if(p){ p.stock=Math.max(0,p.stock-c.qty); }
+    await _sb.from('crm_inventory').update({stock:Math.max(0,(p?.stock||0))}).eq('id',c.id);
+  }
+
+  var nueva={id:venta.id.slice(0,8).toUpperCase(),
+    fecha:new Date().toLocaleDateString('es-ES'),
+    hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+    productos:prods,total:total,pago:_tpvPago,cliente:'—'};
   TPV_HISTORIAL.unshift(nueva);
+  var carritoCopy=_tpvCarrito.slice();
   tpvLimpiar();
   tpvRenderStats();
-  showToast('✅ Venta registrada — '+total+' €');
-  // Mostrar ticket imprimible
-  tpvTicketModal(nueva,_tpvCarrito.slice(),sub,parseFloat(total));
+  showToast('✅ Venta registrada — '+total.toFixed(2)+' €');
+  tpvTicketModal(nueva,carritoCopy,sub,total);
 }
 
 function tpvTicketModal(venta, lineas, sub, total) {
@@ -4125,11 +4164,11 @@ function tpvRenderStats() {
 }
 
 
-function tpvInit() {
-  tpvRenderStats();
-  tpvRenderCatalogo();
+async function tpvInit() {
   tpvRenderTicket();
   tpvVista('caja');
+  await Promise.all([tpvLoadProductos(), tpvLoadHistorial()]);
+  tpvRenderStats();
 }
 </script>
 <style>
