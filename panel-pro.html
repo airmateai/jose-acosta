@@ -864,11 +864,13 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
             </div>
           </div>
           <div class="stats-grid" id="fact-stats-grid" style="margin-bottom:18px"></div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-            <button class="btn" id="fact-filter-all" onclick="crmSetFilter('all')" style="background:rgba(196,163,90,.18);color:#c4a35a;border:1px solid rgba(196,163,90,.4)">Todos</button>
-            <button class="btn btn-ghost" id="fact-filter-presupuesto" onclick="crmSetFilter('presupuesto')">Presupuestos</button>
-            <button class="btn btn-ghost" id="fact-filter-factura" onclick="crmSetFilter('factura')">Facturas</button>
-            <input id="fact-search" type="text" placeholder="🔍 Buscar por cliente, nº o estado…" oninput="crmRenderFacturasTable()" style="margin-left:auto;padding:6px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#f1f5f9;font-size:13px;width:260px;outline:none"/>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn" id="fact-filter-all" onclick="crmSetFilter('all')" style="background:rgba(196,163,90,.18);color:#c4a35a;border:1px solid rgba(196,163,90,.4)">Todos</button>
+              <button class="btn btn-ghost" id="fact-filter-presupuesto" onclick="crmSetFilter('presupuesto')">Presupuestos</button>
+              <button class="btn btn-ghost" id="fact-filter-factura" onclick="crmSetFilter('factura')">Facturas</button>
+            </div>
+            <input id="fact-search" type="text" placeholder="🔍 Buscar por cliente, nº o estado…" oninput="crmRenderFacturasTable()" style="padding:8px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.12);background:#fff;color:#1e293b;font-size:13px;width:100%;box-sizing:border-box;outline:none"/>
           </div>
           <div class="card"><div class="table-wrap">
             <table><thead><tr><th>Nº</th><th>Cliente</th><th>Tipo</th><th>Estado</th><th>Total</th><th>Fecha</th><th>Acciones</th></tr></thead>
