@@ -2846,11 +2846,25 @@ async function fondoEnviarResumen(clienteId){
   const c=_crmClientes.find(x=>x.id===clienteId);
   if(!c||!c.email){alert('El cliente no tiene email registrado');return;}
   const movs=await fondoVerMovimientos(clienteId);
-  const saldo=fondoSaldo(movs);
+  const totalDep=movs.filter(m=>m.price>0).reduce((s,m)=>s+Number(m.price||0),0);
+  const totalDesc=movs.filter(m=>m.price<0).reduce((s,m)=>s+Number(m.price||0),0);
+  const saldo=totalDep+totalDesc;
   const asunto=encodeURIComponent('Resumen de fondos — Jose Acosta Style');
-  let cuerpo=`Estimado/a ${c.name},\n\nSaldo disponible en su cuenta: ${saldo.toFixed(2)} €\n\nMovimientos:\n`;
-  movs.forEach(m=>{const fecha=m.created_at?m.created_at.split('T')[0]:'—';const tipo=m.price>=0?'Depósito':'Descuento';cuerpo+=`${fecha} — ${tipo}: ${Number(m.price||0).toFixed(2)} € ${m.notes?'('+m.notes+')':''}\n`;});
-  cuerpo+='\nGracias por su confianza.\n\nJose Acosta Style';
+  let cuerpo=`Estimado/a ${c.name},\n\nA continuación le enviamos el estado de su cuenta de fondos con Jose Acosta Style:\n\n`;
+  cuerpo+=`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  cuerpo+=`TOTAL DEPOSITADO:   ${totalDep.toFixed(2)} €\n`;
+  cuerpo+=`TOTAL DESCONTADO:  ${Math.abs(totalDesc).toFixed(2)} €\n`;
+  cuerpo+=`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  cuerpo+=`SALDO RESTANTE:    ${saldo.toFixed(2)} €\n`;
+  cuerpo+=`━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  cuerpo+=`Detalle de movimientos:\n`;
+  movs.forEach(m=>{
+    const fecha=m.created_at?m.created_at.split('T')[0]:'—';
+    const tipo=m.price>=0?'+ Depósito':'− Descuento';
+    const importe=Math.abs(Number(m.price||0)).toFixed(2);
+    cuerpo+=`${fecha}  ${tipo}: ${importe} €${m.notes?' ('+m.notes+')':''}\n`;
+  });
+  cuerpo+='\nEstamos a su disposición para cualquier consulta.\n\nJose Acosta Style\nPasaje Peligros 2, Santa Cruz de Tenerife';
   window.location.href=`mailto:${c.email}?subject=${asunto}&body=${encodeURIComponent(cuerpo)}`;
 }
 
