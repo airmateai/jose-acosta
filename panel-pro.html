@@ -1784,6 +1784,8 @@ function doLogout(){localStorage.removeItem(SESSION_KEY);location.reload();}
 function enterApp(name){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  // Limpiar stock localStorage antiguo (ahora se usa Supabase)
+  try{const oldKey='airmate_stock_'+(BIZ_SLUG||'default');if(localStorage.getItem(oldKey))localStorage.removeItem(oldKey);}catch(e){}
   // Cerrar siempre overlays al entrar
   function _closeOverlays(){['crm-print-overlay','crm-overlay','modal-overlay','suit-overlay'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.remove('open');el.style.display='none';}});}
   _closeOverlays();
