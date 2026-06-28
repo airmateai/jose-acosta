@@ -5531,48 +5531,32 @@ function _finGenDemo(){
   return {treasury,expensesAcc,payments,salesreceipt,creditnote:[],ts:Date.now()};
 }
 
-const HOLDED_KEY='36b92686213c3974569efc5959a08263';
-async function _holdedGet(endpoint){
-  try{
-    const r=await fetch(`https://api.holded.com/api/invoicing/v1/${endpoint}`,{headers:{'key':HOLDED_KEY}});
-    if(!r.ok) return null;
-    return await r.json();
-  }catch(e){console.warn('Holded error',endpoint,e);return null;}
-}
-
 async function _finLoadData(force){
   if(!force && _finCache.ts && (Date.now()-_finCache.ts)<120000) return _finCache;
   try{
-    const [invoices, receipts, purchases, payments, contacts] = await Promise.all([
-      _holdedGet('documents/invoice'),
-      _holdedGet('documents/salesreceipt'),
-      _holdedGet('documents/purchaseinvoice'),
-      _holdedGet('payments'),
-      _holdedGet('contacts'),
+    const now=Math.floor(Date.now()/1000);
+    const yearAgo=now-365*86400;
+    const [invoices, compras] = await Promise.all([
+      _sb.from('crm_invoices').select('*').eq('business_slug',BIZ_SLUG).eq('type','factura').order('issue_date',{ascending:false}).limit(300),
+      _sb.from('crm_invoices').select('*').eq('business_slug',BIZ_SLUG).eq('type','compra').order('issue_date',{ascending:false}).limit(300),
     ]);
-    if(!invoices && !receipts){
-      _finCache=_finGenDemo();
-      return _finCache;
-    }
-    // Construir treasury vacío (sin conexión bancaria Holded)
-    const treasury=[];
-    // Convertir facturas emitidas a payments de ingreso
+    const facturas = invoices.data||[];
+    const gastos   = compras.data||[];
+    if(!facturas.length && !gastos.length){ _finCache=_finGenDemo(); return _finCache; }
+
     const allPayments=[];
-    (invoices||[]).forEach(inv=>{
-      if(inv.status==='paid'||inv.status==='closed'){
-        allPayments.push({id:inv.id,bankId:'1',contactName:inv.contactName||'',amount:Number(inv.total||0),desc:inv.desc||inv.contactName||'Factura',date:inv.date,documentType:'invoice',documentId:inv.id});
-      }
+    facturas.forEach(f=>{
+      const d=f.issue_date?new Date(f.issue_date).getTime()/1000:now;
+      allPayments.push({id:f.id,bankId:'1',contactName:f.client_name||'',amount:Number(f.total||0),desc:f.invoice_number||f.client_name||'Factura',date:d,documentType:'invoice',documentId:f.id,status:f.status});
     });
-    (receipts||[]).forEach(sr=>{
-      allPayments.push({id:sr.id,bankId:'1',contactName:sr.contactName||'',amount:Number(sr.total||0),desc:'Venta TPV',date:sr.date,documentType:'salesreceipt',documentId:sr.id,products:sr.products});
-    });
-    (purchases||[]).forEach(p=>{
-      allPayments.push({id:p.id,bankId:'1',contactName:p.contactName||'',amount:-Number(p.total||0),desc:p.desc||p.contactName||'Compra',date:p.date,documentType:'purchase',documentId:p.id});
+    gastos.forEach(g=>{
+      const d=g.issue_date?new Date(g.issue_date).getTime()/1000:now;
+      allPayments.push({id:g.id,bankId:'1',contactName:g.client_name||'',amount:-Number(g.total||0),desc:g.invoice_number||g.client_name||'Compra',date:d,documentType:'purchase',documentId:g.id});
     });
     allPayments.sort((a,b)=>b.date-a.date);
-    _finCache={treasury,expensesAcc:[],payments:allPayments,salesreceipt:receipts||[],creditnote:[],invoices:invoices||[],purchases:purchases||[],ts:Date.now(),_live:true};
+    _finCache={treasury:[],expensesAcc:[],payments:allPayments,salesreceipt:[],creditnote:[],invoices:facturas,purchases:gastos,ts:Date.now(),_live:true};
   }catch(e){
-    console.warn('Holded load failed, usando demo',e);
+    console.warn('Fin load failed',e);
     _finCache=_finGenDemo();
   }
   return _finCache;
@@ -5621,7 +5605,7 @@ async function renderFinanzas(){
 function _finRenderTreasury(treasury){
   const box=document.getElementById('fin-treasury'); if(!box)return;
   if(!treasury||!treasury.length){
-    box.innerHTML='<div style="grid-column:1/-1;padding:18px;text-align:center;color:#8a7960;font-style:italic;font-family:\'Cormorant Garamond\',serif">Sin cuentas conectadas a Holded</div>';
+    box.innerHTML='<div style="grid-column:1/-1;padding:18px;text-align:center;color:#8a7960;font-style:italic;font-family:\'Cormorant Garamond\',serif">Conecta tu banco en Holded para ver saldos en tiempo real</div>';
     return;
   }
   const total=treasury.reduce((s,t)=>s+Number(t.balance||0),0);
