@@ -1100,9 +1100,20 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
               <button class="btn btn-ghost" onclick="exportClientesCSV()" id="cli-btn-csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
               <button class="btn btn-ghost" onclick="sincronizarContactosHolded()" id="cli-btn-sync" title="Enriquecer fichas con NIF, IBAN, dirección y teléfono desde Holded"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Importar Holded</button>
               <button class="btn btn-ghost" onclick="crmFiltrarFidelizados()" id="cli-btn-fid" title="Ver solo clientes fidelizados">⭐ Fidelizados</button>
+              <button class="btn btn-ghost" onclick="crmToggleBuscadorBodas()" id="cli-btn-bodas" title="Buscar novios por fecha de boda">💍 Novios por fecha</button>
               <button class="btn btn-ghost" onclick="abrirCorreosMasivos()" title="Enviar email a clientes">✉ Email masivo</button>
               <button class="btn btn-accent" id="cli-btn-new" onclick="crmOpenClienteModal()">+ Nuevo cliente</button>
             </div>
+          </div>
+
+          <!-- Buscador de novios por fecha de boda -->
+          <div id="cli-bodas-panel" style="display:none;background:#fdf8ee;border:1px solid #f0dfae;border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="font-size:12px;font-weight:700;color:#9a7f45">💍 Bodas entre</div>
+            <input type="date" class="crm-form-ctrl" id="bodas-desde" style="width:150px" onchange="crmBuscarBodas()">
+            <div style="font-size:12px;color:#9a7f45">y</div>
+            <input type="date" class="crm-form-ctrl" id="bodas-hasta" style="width:150px" onchange="crmBuscarBodas()">
+            <button class="btn btn-ghost btn-xs" onclick="crmLimpiarBuscadorBodas()">Limpiar</button>
+            <div id="bodas-resultado" style="font-size:12px;color:#64748b"></div>
           </div>
 
           <!-- Tabs particulares / corporativos -->
@@ -1149,15 +1160,11 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
               <div class="crm-kcol-body" id="kcrm-listo_prueba" ondragover="encDragOver(event,'listo_prueba')" ondragleave="encDragLeave('listo_prueba')" ondrop="encDrop(event,'listo_prueba')"></div>
             </div>
             <div class="crm-kcol">
-              <div class="crm-kcol-hd" style="background:#ede9fe;color:#5b21b6">En Prueba <span id="kcrm-cnt-prueba" class="tag tag-purple" style="margin-left:auto">0</span></div>
-              <div class="crm-kcol-body" id="kcrm-prueba" ondragover="encDragOver(event,'prueba')" ondragleave="encDragLeave('prueba')" ondrop="encDrop(event,'prueba')"></div>
-            </div>
-            <div class="crm-kcol">
               <div class="crm-kcol-hd" style="background:#fdf4ff;color:#7e22ce">Ajustes <span id="kcrm-cnt-ajustes" class="tag" style="margin-left:auto;background:#e9d5ff;color:#7e22ce">0</span></div>
               <div class="crm-kcol-body" id="kcrm-ajustes" ondragover="encDragOver(event,'ajustes')" ondragleave="encDragLeave('ajustes')" ondrop="encDrop(event,'ajustes')"></div>
             </div>
             <div class="crm-kcol">
-              <div class="crm-kcol-hd" style="background:#dcfce7;color:#14532d">Listo <span id="kcrm-cnt-listo" class="tag tag-confirmed" style="margin-left:auto">0</span></div>
+              <div class="crm-kcol-hd" style="background:#dcfce7;color:#14532d">Listo para entrega <span id="kcrm-cnt-listo" class="tag tag-confirmed" style="margin-left:auto">0</span></div>
               <div class="crm-kcol-body" id="kcrm-listo" ondragover="encDragOver(event,'listo')" ondragleave="encDragLeave('listo')" ondrop="encDrop(event,'listo')"></div>
             </div>
             <div class="crm-kcol">
@@ -1451,7 +1458,7 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
                     <button onclick="tpvSetPago('bizum')" id="tpv-pago-bizum" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1)">Bizum</button>
                   </div>
                 </div>
-                <button onclick="tpvCobrar()" style="width:100%;padding:13px;background:#c4a35a;color:#0a0a0a;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.02em">COBRAR</button>
+                <button onclick="tpvCobrar()" id="tpv-btn-cobrar" style="width:100%;padding:13px;background:#c4a35a;color:#0a0a0a;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.02em">COBRAR</button>
                 <button onclick="tpvLimpiar()" style="width:100%;padding:8px;background:transparent;color:rgba(255,255,255,.3);border:none;font-size:12px;cursor:pointer;margin-top:6px">Cancelar venta</button>
               </div>
             </div>
@@ -1767,9 +1774,8 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
 <script>
 const SB_URL='https://vjofxmfwdybktpwiuanc.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqb2Z4bWZ3ZHlia3Rwd2l1YW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NzU5NDYsImV4cCI6MjA5MDA1MTk0Nn0.ixU-33c0FEkO7F5xjWb3YHkvj_pQuR0gsJETrGA8ZTE';
-const SB_SRV='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqb2Z4bWZ3ZHlia3Rwd2l1YW5jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQ3NTk0NiwiZXhwIjoyMDkwMDUxOTQ2fQ.08g-CtdJ0BvgE3U4v9JppA_114EN24KBs7iBpUaw9cs';
 const _sb=supabase.createClient(SB_URL,SB_KEY);
-const _sbSrv=supabase.createClient(SB_URL,SB_SRV);
+const _sbSrv=_sb; // service_role retirada del cliente por seguridad (fugaba la clave maestra) — funciones que la necesitaban (facturas_compra, storage) quedan pendientes de mover a un endpoint serverless
 
 let BIZ_SLUG='',BIZ_NAME='';
 let allCitas=[],allLeads=[];
@@ -1797,6 +1803,15 @@ function enterApp(name){
   document.getElementById('sidebar-avatar').textContent=(name||BIZ_NAME).charAt(0).toUpperCase();
   document.title='Panel · '+BIZ_NAME;
   emailjs.init('i4iBVVP-BkUOOwBE9');
+
+  // ── SISTEMA DE EMAILS AUTOMÁTICOS ─────────────────────────────
+  // Plantillas EmailJS — configurar en emailjs.com:
+  // template_qnip0mc  → Confirmación de cita (ya existe)
+  // template_6arpdfi  → Email genérico cancelación/recibo (ya existe)
+  // template_ja_encargo → Nuevo encargo / cambio de estado (CREAR)
+  // template_ja_pago    → Recibo de anticipo o pago (CREAR)
+  // template_ja_tpv     → Recibo TPV con lista de productos (CREAR)
+
   // ── Auto-seed datos fiscales (idempotente, sólo si vacío) ─────
   if(BIZ_SLUG==='jose-acosta'){
     try{
@@ -1903,6 +1918,7 @@ async function loadAll(){
   if(_prevCitaCount>=0&&pendCount>_prevCitaCount) notificar(`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Nueva cita pendiente (${pendCount})`);
   if(_prevHotCount>=0&&hotCount>_prevHotCount) notificar(`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Nuevo lead caliente`);
   _prevCitaCount=pendCount; _prevHotCount=hotCount;
+  _checkRecordatoriosAutomaticos();
   renderDashboard();updateBadges();
   const act=document.querySelector('.tab-pane.active')?.id;
   if(act==='pane-citas')renderCitas();
@@ -2219,7 +2235,7 @@ async function cambiarEstadoCita(id,status){
   };
   let tpl=null;
   if(status==='confirmed')tpl='template_qnip0mc';
-  else if(status==='cancelled')tpl='template_lg1l7bi';
+  else if(status==='cancelled')tpl='template_6arpdfi';
   if(!tpl)return;
   emailjs.send('service_npmjvvf',tpl,base)
     .then(()=>showToast(' Email enviado a '+c.client_email))
@@ -2318,18 +2334,22 @@ function openNuevaCitaModal(prefillDate, prefillTime){
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
 }
+let _savingCita=false;
 async function saveCita(){
-  const name=document.getElementById('nc-name').value.trim();
-  const service=document.getElementById('nc-service').value.trim();
-  const date=document.getElementById('nc-date').value;
-  const time=document.getElementById('nc-time').value;
-  if(!name||!service||!date||!time){alert('Nombre, servicio, fecha y hora son obligatorios');return;}
-  const starts_at=new Date(`${date}T${time}`).toISOString();
-  const dur=parseInt(document.getElementById('nc-dur').value)||60;
-  const ends_at=new Date(new Date(starts_at).getTime()+dur*60000).toISOString();
-  const payload={business_slug:BIZ_SLUG,client_name:name,client_phone:document.getElementById('nc-phone').value||null,client_email:document.getElementById('nc-email').value||null,service,starts_at,ends_at,duration_minutes:dur,status:document.getElementById('nc-status').value,notes:document.getElementById('nc-notes').value||null};
-  await _sb.from('appointments').insert(payload);
-  closeModal();loadAll();showToast('Cita creada');
+  if(_savingCita)return;_savingCita=true;
+  try{
+    const name=document.getElementById('nc-name').value.trim();
+    const service=document.getElementById('nc-service').value.trim();
+    const date=document.getElementById('nc-date').value;
+    const time=document.getElementById('nc-time').value;
+    if(!name||!service||!date||!time){alert('Nombre, servicio, fecha y hora son obligatorios');return;}
+    const starts_at=new Date(`${date}T${time}`).toISOString();
+    const dur=parseInt(document.getElementById('nc-dur').value)||60;
+    const ends_at=new Date(new Date(starts_at).getTime()+dur*60000).toISOString();
+    const payload={business_slug:BIZ_SLUG,client_name:name,client_phone:document.getElementById('nc-phone').value||null,client_email:document.getElementById('nc-email').value||null,service,starts_at,ends_at,duration_minutes:dur,status:document.getElementById('nc-status').value,notes:document.getElementById('nc-notes').value||null};
+    await _sb.from('appointments').insert(payload);
+    closeModal();loadAll();showToast('Cita creada');
+  }finally{_savingCita=false;}
 }
 
 // ── LEADS ──────────────────────────────────────────────────────────────────
@@ -2479,7 +2499,7 @@ async function saveSegFecha(id){
 //  CRM PRO
 // ══════════════════════════════════════════════════════════════════════════
 let _crmClientes=[],_crmInventario=[],_crmFacturas=[],_crmLines=[],_crmEditId=null;
-const CRM_ST=['presupuesto','produccion','listo_prueba','prueba','ajustes','listo','entregado'];
+const CRM_ST=['presupuesto','produccion','listo_prueba','ajustes','listo','entregado'];
 
 function crmOpenModal(title,body,footer){
   document.getElementById('crm-modal-title').textContent=title;
@@ -2559,8 +2579,8 @@ async function crmVerCliente(id){
       <div style="font-size:16px;font-weight:800;color:${saldoPendiente>0?'#ea580c':'#94a3b8'}">${crmFmt(saldoPendiente)}</div>
     </div>
   </div>`;
-  const stColor={presupuesto:'#f59e0b',produccion:'#3b82f6',listo_prueba:'#8b5cf6',prueba:'#a855f7',ajustes:'#ec4899',listo:'#22c55e',entregado:'#94a3b8'};
-  const stLabel={presupuesto:'Presupuesto',produccion:'Producción',listo_prueba:'Listo prueba',prueba:'En prueba',ajustes:'Ajustes',listo:'Listo',entregado:'Entregado'};
+  const stColor={presupuesto:'#f59e0b',produccion:'#3b82f6',listo_prueba:'#8b5cf6',ajustes:'#ec4899',listo:'#22c55e',entregado:'#94a3b8'};
+  const stLabel={presupuesto:'Presupuesto',produccion:'Producción',listo_prueba:'Listo prueba',ajustes:'Ajustes',listo:'Listo para entrega',entregado:'Entregado'};
   const ordsArr=ords.data||[];
   const ordsHtml=ordsArr.length?`<div style="margin-bottom:20px">
     <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> Encargos (${ordsArr.length})</div>`+
@@ -2664,7 +2684,7 @@ async function crmVerCliente(id){
     </div>
   </div>` : '';
 
-  crmOpenModal(`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${esc(c.name)}`,
+  crmOpenModal(c.name,
     `<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #f1f5f9">
       <div style="width:52px;height:52px;border-radius:50%;background:${isVIP?'linear-gradient(135deg,#c4a35a,#9a7f45)':'var(--acc)'};display:grid;place-items:center;font-size:22px;font-weight:800;color:#fff;flex-shrink:0;box-shadow:${isVIP?'0 4px 14px rgba(196,163,90,.35)':'none'}">${c.name.charAt(0).toUpperCase()}</div>
       <div style="flex:1;min-width:0">
@@ -2672,6 +2692,7 @@ async function crmVerCliente(id){
         <div style="font-size:13px;color:#64748b">${[c.phone,c.email].filter(Boolean).join(' · ')||'Sin contacto'}</div>
         ${c.nif?`<div style="font-size:12px;color:#94a3b8">NIF: ${esc(c.nif)}</div>`:''}
         ${c.direccion?`<div style="font-size:12px;color:#94a3b8"> ${esc(c.direccion)}</div>`:''}
+        ${c.fecha_boda?`<div style="font-size:12px;color:#c4a35a;font-weight:600">💍 Boda: ${new Date(c.fecha_boda+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</div>`:''}
         ${c.tags?`<div style="margin-top:4px">${c.tags.split(',').map(t=>`<span class="tag tag-cold" style="font-size:10px;margin-right:4px">${esc(t.trim())}</span>`).join('')}</div>`:''}
       </div>
       ${c.empresa?`<div><span class="tag tag-cold"> ${esc(c.empresa)}</span></div>`:''}
@@ -2688,7 +2709,7 @@ async function crmVerCliente(id){
 async function crmOpenFacturaModalForClient(clientId, clientName){
   _crmEditId=null;
   const body=await crmFacturaForm({client_id:clientId,client_name:clientName});
-  crmOpenModal('Nuevo documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveFactura()">Guardar</button>`);
+  crmOpenModal('Nuevo documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" id="crm-btn-save-factura" onclick="crmSaveFactura()">Guardar</button>`);
   crmRenderLines();
 }
 function crmFilterClientes(q){
@@ -2726,7 +2747,10 @@ function crmClienteForm(c={}){
   <div class="crm-form-group"><label class="crm-form-label">Dirección fiscal</label><input class="crm-form-ctrl" id="cf-direccion" value="${esc(c.direccion||'')}"/></div>
   <div class="crm-form-row">
     <div class="crm-form-group"><label class="crm-form-label">Etiquetas (separadas por coma)</label><input class="crm-form-ctrl" id="cf-tags" value="${esc(c.tags||'')}" placeholder="novio, corporativo, vip..."/></div>
-    <div class="crm-form-group" style="display:flex;align-items:center;gap:10px;padding-top:22px">
+    <div class="crm-form-group"><label class="crm-form-label">Fecha de la boda</label><input type="date" class="crm-form-ctrl" id="cf-boda" value="${c.fecha_boda||''}"/></div>
+  </div>
+  <div class="crm-form-row">
+    <div class="crm-form-group" style="display:flex;align-items:center;gap:10px;padding-top:8px">
       <input type="checkbox" id="cf-fidelizado" ${(c.tags||'').includes('fidelizado')?'checked':''} style="width:18px;height:18px;accent-color:#c4a35a;cursor:pointer">
       <label for="cf-fidelizado" style="font-size:13px;font-weight:700;color:#c4a35a;cursor:pointer">⭐ Cliente fidelizado</label>
     </div>
@@ -2755,7 +2779,7 @@ async function crmSaveClienteYTaller(){
   if(!id)return;
   const prenda=cv('cf-tipo')||'Traje';
   const nombre=cv('cf-name')||'';
-  const encargo={business_slug:BIZ_SLUG,title:`${prenda} — ${nombre}`,client_id:id,client_name:nombre,status:'pendiente',notes:'Toma de medidas realizada. Pendiente patronaje.'};
+  const encargo={business_slug:BIZ_SLUG,title:`${prenda} — ${nombre}`,client_id:id,client_name:nombre,status:'presupuesto',notes:'Toma de medidas realizada. Pendiente patronaje.'};
   const {error}=await _sb.from('crm_orders').insert(encargo);
   if(error){showToast('Guardado pero error creando encargo en taller');return;}
   showToast('Cliente guardado y encargo creado en taller');
@@ -2773,12 +2797,38 @@ async function crmSaveCliente(){
   const fidEl=document.getElementById('cf-fidelizado');
   if(fidEl&&fidEl.checked){if(!tagsVal.includes('fidelizado'))tagsVal=(tagsVal?tagsVal+',fidelizado':'fidelizado');}
   else{tagsVal=tagsVal.split(',').map(s=>s.trim()).filter(s=>s&&s!=='fidelizado').join(',');}
-  const payload={business_slug:BIZ_SLUG,name,tipo:cv('cf-tipo')||'particular',empresa:cv('cf-empresa')||null,phone:cv('cf-phone')||null,email:cv('cf-email')||null,nif:cv('cf-nif')||null,iban:cv('cf-iban')||null,direccion:cv('cf-direccion')||null,tags:tagsVal||null,notes:cv('cf-notes')||null,measurements:Object.keys(m).length?m:null};
-  if(_crmEditId)await _sb.from('crm_clients').update(payload).eq('id',_crmEditId);
-  else await _sb.from('crm_clients').insert(payload);
+  const payload={business_slug:BIZ_SLUG,name,tipo:cv('cf-tipo')||'particular',empresa:cv('cf-empresa')||null,phone:cv('cf-phone')||null,email:cv('cf-email')||null,nif:cv('cf-nif')||null,iban:cv('cf-iban')||null,direccion:cv('cf-direccion')||null,tags:tagsVal||null,fecha_boda:cv('cf-boda')||null,notes:cv('cf-notes')||null,measurements:Object.keys(m).length?m:null};
+  let clientId=_crmEditId;
+  if(_crmEditId){
+    const {error}=await _sb.from('crm_clients').update(payload).eq('id',_crmEditId);
+    if(error){showToast('⚠ Error al guardar cliente: '+error.message);return null;}
+    // Propagar el nombre nuevo a encargos y facturas ya creados (si no, quedan con el nombre viejo para siempre)
+    await Promise.all([
+      _sb.from('crm_orders').update({client_name:name}).eq('client_id',_crmEditId),
+      _sb.from('crm_invoices').update({client_name:name}).eq('client_id',_crmEditId)
+    ]);
+  } else {
+    const {data,error}=await _sb.from('crm_clients').insert(payload).select().single();
+    if(error){showToast('⚠ Error al guardar cliente: '+error.message);return null;}
+    clientId=data.id;
+  }
   crmCloseModal();crmLoadClientes();showToast('Cliente guardado');
+  return clientId;
 }
-async function crmDeleteCliente(id){if(!confirm('¿Eliminar cliente?'))return;await _sb.from('crm_clients').delete().eq('id',id);crmLoadClientes();}
+async function crmDeleteCliente(id){
+  const [{count:cOrd},{count:cInv}]=await Promise.all([
+    _sb.from('crm_orders').select('id',{count:'exact',head:true}).eq('client_id',id),
+    _sb.from('crm_invoices').select('id',{count:'exact',head:true}).eq('client_id',id)
+  ]);
+  const total=(cOrd||0)+(cInv||0);
+  if(total>0){
+    if(!confirm(`Este cliente tiene ${cOrd||0} encargo(s) y ${cInv||0} factura(s) asociadas.\n\nSi lo eliminas, esos registros quedarán huérfanos (sin cliente vinculado) pero NO se borrarán.\n\n¿Eliminar el cliente de todas formas?`))return;
+  } else {
+    if(!confirm('¿Eliminar cliente?'))return;
+  }
+  await _sb.from('crm_clients').delete().eq('id',id);
+  crmLoadClientes();
+}
 
 // ── FIDELIZADOS ─────────────────────────────────────────────────────────────
 let _filtrFidelizados=false;
@@ -2789,6 +2839,42 @@ function crmFiltrarFidelizados(){
   btn.style.color=_filtrFidelizados?'#854d0e':'';
   const lista=_filtrFidelizados?_crmClientes.filter(c=>(c.tags||'').includes('fidelizado')):_crmClientes;
   crmRenderClientes(lista);
+}
+
+// ── BUSCADOR DE NOVIOS POR FECHA DE BODA ────────────────────────────────────
+function crmToggleBuscadorBodas(){
+  const p=document.getElementById('cli-bodas-panel');
+  const on=p.style.display==='none'||!p.style.display;
+  p.style.display=on?'flex':'none';
+  const btn=document.getElementById('cli-btn-bodas');
+  btn.style.background=on?'#fdf4dc':'';btn.style.color=on?'#9a7f45':'';
+  if(on)crmBuscarBodas();
+}
+function crmLimpiarBuscadorBodas(){
+  document.getElementById('bodas-desde').value='';
+  document.getElementById('bodas-hasta').value='';
+  document.getElementById('bodas-resultado').textContent='';
+  crmRenderClientes(_crmClientes);
+}
+async function crmBuscarBodas(){
+  const desde=cv('bodas-desde'),hasta=cv('bodas-hasta');
+  let lista=_crmClientes.filter(c=>c.fecha_boda);
+  if(desde)lista=lista.filter(c=>c.fecha_boda>=desde);
+  if(hasta)lista=lista.filter(c=>c.fecha_boda<=hasta);
+  lista.sort((a,b)=>a.fecha_boda.localeCompare(b.fecha_boda));
+  crmRenderClientes(lista);
+  // Comprobar si sus encargos ya estan en ajustes/listo/entregado (o si aun quedan por producir)
+  if(lista.length){
+    const ids=lista.map(c=>c.id);
+    const {data:ords}=await _sb.from('crm_orders').select('client_id,status').eq('business_slug',BIZ_SLUG).in('client_id',ids);
+    const pendientes=lista.filter(c=>{
+      const os=(ords||[]).filter(o=>o.client_id===c.id);
+      return os.length && os.some(o=>['presupuesto','produccion','listo_prueba'].includes(o.status));
+    });
+    document.getElementById('bodas-resultado').innerHTML=`${lista.length} novio${lista.length!==1?'s':''} en el rango` + (pendientes.length?` · <strong style="color:#c0392b">⚠ ${pendientes.length} con encargo aún sin terminar</strong>`:` · <strong style="color:#16a34a">✓ todos con encargo en ajustes o listos</strong>`);
+  } else {
+    document.getElementById('bodas-resultado').textContent='Sin novios con fecha de boda en ese rango';
+  }
 }
 
 // ── CORREOS MASIVOS ──────────────────────────────────────────────────────────
@@ -3190,7 +3276,7 @@ function encKcard(o){
       <button class="btn btn-xs" style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff" onclick="openSuitDesigner('${o.id}')">Diseño</button>
       <button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="generarFacturaDesdeEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg> Factura</button>
       <button class="btn btn-xs" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0" onclick="imprimirContrato('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Contrato</button>
-      <button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-weight:700" onclick="imprimirTaller('${o.id}')"> Taller</button>
+      <button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-weight:700" onclick="imprimirTaller('${o.id}')"> Ajustes</button>
     </div>
   </div>`;
 }
@@ -3223,7 +3309,7 @@ async function imprimirTaller(id){
     td{border:1px solid #bbb;padding:10px 12px;vertical-align:top;}
     .lbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#555;display:block;margin-bottom:4px;}
     .val{font-size:14px;font-weight:600;min-height:22px;}
-    .obs td{height:60px;}
+    .obs td{height:130px;}
     @media print{body{padding:10px;}button{display:none!important;}}
   </style></head><body>
   <div class="logo">
@@ -3246,7 +3332,7 @@ async function imprimirTaller(id){
       <td><span class="lbl">Fecha recogida prevista</span><div class="val" contenteditable="true" style="outline:none;border-bottom:1px dashed #aaa">${esc(recogida||'')}</div></td>
     </tr>
     <tr class="obs">
-      <td colspan="2"><span class="lbl">Observaciones</span><div class="val" contenteditable="true" style="min-height:60px;outline:none">&nbsp;</div></td>
+      <td colspan="2"><span class="lbl">Observaciones</span><div class="val" contenteditable="true" style="min-height:130px;outline:none">&nbsp;</div></td>
     </tr>
   </table>
   <div style="margin-top:18px;text-align:center">
@@ -3290,7 +3376,7 @@ async function _encNotificarCliente(o,col){
   const email=client?.email||o.client_email||null;
   if(!email)return;
   const biz=getBizInfo();
-  emailjs.send('service_npmjvvf','template_lg1l7bi',{
+  emailjs.send('service_npmjvvf','template_6arpdfi',{
     cliente_nombre:o.client_name||'',
     cliente_email:email,
     cliente_telefono:o.client_phone||'—',
@@ -3342,10 +3428,10 @@ function encRenderMats(){
   el.innerHTML=_encMatsList.map((m,i)=>`
     <div class="mat-sel-row">
       <select class="crm-form-ctrl" onchange="_encMatsList[${i}].inv_id=this.value;const op=this.options[this.selectedIndex];_encMatsList[${i}].name=op.dataset.name||'';_encMatsList[${i}].unit=op.dataset.unit||''">
-        <option value="">— Material —</option>
+        <option value="">— Accesorio —</option>
         ${_crmInventario.map(inv=>`<option value="${inv.id}" data-name="${esc(inv.name)}" data-unit="${esc(inv.unit||'ud')}"${inv.id===m.inv_id?' selected':''}>${esc(inv.name)} (${inv.stock} ${esc(inv.unit||'ud')})</option>`).join('')}
       </select>
-      <input type="number" class="crm-form-ctrl" placeholder="Cant." value="${m.qty||''}" min="0.01" step="0.01" oninput="_encMatsList[${i}].qty=parseFloat(this.value)||0"/>
+      <input type="number" class="crm-form-ctrl" placeholder="Cant." value="${m.qty||''}" min="1" step="1" oninput="_encMatsList[${i}].qty=parseInt(this.value,10)||0"/>
       <button class="btn btn-danger btn-xs" onclick="_encMatsList.splice(${i},1);encRenderMats()">✕</button>
     </div>`).join('');
 }
@@ -3358,7 +3444,7 @@ async function _buildEncBody(o={}){
   const ev=o.evento||{};
   const tej=o.tejidos||{};
   const pg=o.pago||{};
-  const stLabels={presupuesto:'Presupuesto',produccion:'Producción',listo_prueba:'Listo para prueba',prueba:'En Prueba',ajustes:'Ajustes',listo:'Listo',entregado:'Entregado'};
+  const stLabels={presupuesto:'Presupuesto',produccion:'Producción',listo_prueba:'Listo para prueba',ajustes:'Ajustes',listo:'Listo para entrega',entregado:'Entregado'};
   return `
     <!-- INFO BÁSICA -->
     <div class="crm-form-row">
@@ -3436,10 +3522,10 @@ async function _buildEncBody(o={}){
       </div>
     </div>
 
-    <!-- MATERIALES -->
+    <!-- ACCESORIOS DE STOCK (comercio al por menor) -->
     <div style="border-top:1px solid #f1f5f9;padding-top:12px;margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em">Materiales usados</div>
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em">Accesorios</div>
         <button class="btn btn-ghost btn-xs" onclick="encAddMat()">+ Añadir</button>
       </div>
       <div id="enc-mats-list"></div>
@@ -3455,6 +3541,7 @@ async function _buildEncBody(o={}){
             <option value="metalico"${(pg.metodo||'metalico')==='metalico'?' selected':''}>Metálico</option>
             <option value="transferencia"${pg.metodo==='transferencia'?' selected':''}>Transferencia</option>
             <option value="tarjeta"${pg.metodo==='tarjeta'?' selected':''}>Tarjeta</option>
+            <option value="bizum"${pg.metodo==='bizum'?' selected':''}>Bizum</option>
           </select>
         </div>
       </div>
@@ -3495,7 +3582,10 @@ async function crmEditEncargo(id){
   if(o.client_id)encCargarMedidas(o.client_id);
 }
 
+let _savingEncargo=false;
 async function crmSaveEncargo(){
+  if(_savingEncargo)return;_savingEncargo=true;
+  try{
   const title=cv('ef-title').trim();if(!title){alert('Título obligatorio');return;}
   const sel=document.getElementById('ef-client');
   const cId=sel.value||null,cName=cId?sel.options[sel.selectedIndex].text:null;
@@ -3522,7 +3612,8 @@ async function crmSaveEncargo(){
   Object.entries(tejFields).forEach(([k,id])=>{const v=cv(id);if(v)tejidos[k]=v;});
   // Pago
   const precio=parseFloat(cv('ef-price'))||null;
-  const anticipo=parseFloat(cv('pg-anticipo'))||0;
+  if(precio!==null&&precio<0){alert('El precio no puede ser negativo');return;}
+  const anticipo=Math.max(0,parseFloat(cv('pg-anticipo'))||0);
   const pago={};
   if(precio){pago.total=precio;pago.anticipo=anticipo;pago.resto=Math.max(0,precio-anticipo);pago.cobrado=parseFloat(cv('pg-cobrado'))||0;}
   const pgMetodo=cv('pg-metodo');if(pgMetodo)pago.metodo=pgMetodo;
@@ -3549,9 +3640,39 @@ async function crmSaveEncargo(){
     materials:validMats.length?validMats:null,
     fotos:fotos.length?fotos:null,
     notes:cv('ef-notes')||null,updated_at:new Date().toISOString()};
+  const esNuevo=!_crmEditId;
   if(_crmEditId)await _sb.from('crm_orders').update(payload).eq('id',_crmEditId);
   else await _sb.from('crm_orders').insert(payload);
+  // Email automático de estado de pago al cliente
+  if(Object.keys(pago).length&&precio){
+    const client=_crmClientes.find(x=>x.id===cId);
+    const clientEmail=client?.email||null;
+    if(clientEmail){
+      const biz=getBizInfo();
+      const anticipo=pago.anticipo||0;
+      const cobrado=pago.cobrado||anticipo;
+      const resto=Math.max(0,precio-cobrado);
+      const fechaEntrega=cv('ef-fecha-entrega')||cv('ev-fecha')||'a confirmar';
+      const lineasPago=`• Total encargo: ${precio.toFixed(2)} €\n• Señal recibida: ${cobrado.toFixed(2)} €\n• Pendiente de pago: ${resto.toFixed(2)} €\n• Fecha de entrega estimada: ${fechaEntrega}`;
+      const asunto=esNuevo?`Confirmación de encargo — ${title}`:`Actualización de tu encargo — ${title}`;
+      const intro=esNuevo
+        ?`Hemos recibido tu señal y tu encargo ya está en marcha. Aquí tienes el resumen de tu pedido:`
+        :`Te enviamos una actualización del estado de pago de tu encargo:`;
+      emailjs.send('service_npmjvvf','template_6arpdfi',{
+        cliente_nombre:cName||client?.name||'',
+        cliente_email:clientEmail,
+        cliente_telefono:client?.phone||'—',
+        negocio_nombre:biz.name||BIZ_NAME,
+        servicio:asunto,
+        duracion:'',precio:precio.toFixed(2)+' €',
+        fecha:new Date().toLocaleDateString('es-ES'),hora:'',
+        reply_to:biz.email||'airmateai@gmail.com',
+        notes:intro+'\n\n'+lineasPago+(resto===0?'\n\n¡Tu encargo está completamente pagado! Gracias por tu confianza.':'\n\nCualquier duda, estamos a tu disposición.')
+      }).then(()=>showToast('📧 Email de pago enviado al cliente')).catch(()=>{});
+    }
+  }
   crmCloseModal();crmLoadEncargos();if(validMats.length)crmLoadInventario();showToast('Encargo guardado');
+  }finally{_savingEncargo=false;}
 }
 
 async function generarFacturaDesdeEncargo(id){
@@ -3823,14 +3944,14 @@ async function crmFacturaForm(f={}){
 async function crmOpenFacturaModal(){
   _crmEditId=null;
   const body=await crmFacturaForm();
-  crmOpenModal('Nuevo documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveFactura()">Guardar</button>`);
+  crmOpenModal('Nuevo documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" id="crm-btn-save-factura" onclick="crmSaveFactura()">Guardar</button>`);
   crmRenderLines();
 }
 async function crmEditFactura(id){
   const f=_crmFacturas.find(x=>x.id===id);if(!f)return;
   _crmEditId=id;
   const body=await crmFacturaForm(f);
-  crmOpenModal('Editar documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveFactura()">Guardar</button>`);
+  crmOpenModal('Editar documento',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" id="crm-btn-save-factura" onclick="crmSaveFactura()">Guardar</button>`);
   crmRenderLines();
 }
 async function _nextInvoiceNum(type){
@@ -3839,28 +3960,39 @@ async function _nextInvoiceNum(type){
   if(type==='ticket') prefix=`FAC SIMPLIFICADAS ${year}/`;
   else if(type==='factura') prefix=`FAC ${year}-`;
   else prefix=`PRE ${year}-`;
-  const {data}=await _sb.from('crm_invoices').select('invoice_number').eq('business_slug',BIZ_SLUG).like('invoice_number',prefix+'%').order('invoice_number',{ascending:false}).limit(1);
-  if(data&&data.length&&data[0].invoice_number){
-    const tail=data[0].invoice_number.replace(prefix,'');
-    const n=parseInt(tail)||0;
-    return prefix+String(n+1).padStart(4,'0');
-  }
-  return prefix+'0001';
+  // Contador atómico en BD (RPC siguiente_numero_factura) — evita que doble clic o dos
+  // admins facturando a la vez generen el mismo número (antes se calculaba en JS leyendo
+  // el máximo actual, lo cual es una race condition confirmada).
+  const {data,error}=await _sb.rpc('siguiente_numero_factura',{p_slug:BIZ_SLUG,p_prefix:prefix});
+  if(error){ console.error(error); throw new Error('No se pudo generar el número de factura: '+error.message); }
+  return data;
 }
+let _crmSavingFactura=false;
 async function crmSaveFactura(){
-  const sel=document.getElementById('ff-client');
-  const cId=sel.value||null,cName=cId?sel.options[sel.selectedIndex].text:null;
-  const total=_crmLines.reduce((s,l)=>s+(parseFloat(l.qty)*parseFloat(l.price)),0);
-  const type=cv('ff-type');
-  let invoice_number=null;
-  if(!_crmEditId)invoice_number=await _nextInvoiceNum(type);
-  const discount=parseFloat(cv('ff-discount'))||0;
-  const irpf=parseFloat(cv('ff-irpf'))||0;
-  const totalConDesc=total*(1-discount/100)*(1-irpf/100);
-  const payload={business_slug:BIZ_SLUG,client_id:cId,client_name:cName,type,status:cv('ff-status'),issue_date:cv('ff-date')||null,due_date:cv('ff-due-date')||null,items:_crmLines,total:Math.round(totalConDesc*100)/100,discount,irpf,tags:cv('ff-tags')||null,notes:cv('ff-notes')||null,...(invoice_number?{invoice_number}:{})};
-  if(_crmEditId)await _sb.from('crm_invoices').update(payload).eq('id',_crmEditId);
-  else await _sb.from('crm_invoices').insert(payload);
-  crmCloseModal();crmLoadFacturas();showToast('Documento guardado');
+  if(_crmSavingFactura)return;
+  _crmSavingFactura=true;
+  const btn=document.getElementById('crm-btn-save-factura');
+  if(btn)btn.disabled=true;
+  try{
+    const sel=document.getElementById('ff-client');
+    const cId=sel.value||null,cName=cId?sel.options[sel.selectedIndex].text:null;
+    const total=_crmLines.reduce((s,l)=>s+(parseFloat(l.qty)*parseFloat(l.price)),0);
+    const type=cv('ff-type');
+    let invoice_number=null;
+    if(!_crmEditId)invoice_number=await _nextInvoiceNum(type);
+    const discount=parseFloat(cv('ff-discount'))||0;
+    const irpf=parseFloat(cv('ff-irpf'))||0;
+    const totalConDesc=total*(1-discount/100)*(1-irpf/100);
+    const payload={business_slug:BIZ_SLUG,client_id:cId,client_name:cName,type,status:cv('ff-status'),issue_date:cv('ff-date')||null,due_date:cv('ff-due-date')||null,items:_crmLines,total:Math.round(totalConDesc*100)/100,discount,irpf,tags:cv('ff-tags')||null,notes:cv('ff-notes')||null,...(invoice_number?{invoice_number}:{})};
+    const {error}=_crmEditId
+      ? await _sb.from('crm_invoices').update(payload).eq('id',_crmEditId)
+      : await _sb.from('crm_invoices').insert(payload);
+    if(error){ alert('⚠ Error al guardar el documento: '+error.message); console.error(error); return; }
+    crmCloseModal();crmLoadFacturas();showToast('Documento guardado');
+  } finally {
+    _crmSavingFactura=false;
+    if(btn)btn.disabled=false;
+  }
 }
 async function crmDeleteFactura(id){if(!confirm('¿Eliminar?'))return;await _sb.from('crm_invoices').delete().eq('id',id);crmLoadFacturas();}
 
@@ -3948,7 +4080,7 @@ function ventaTienda(invId){
   const inv=_crmInventario.find(x=>x.id===invId);if(!inv)return;
   const biz=getBizInfo();
   const ivaPct=biz.iva_pct||0;
-  crmOpenModal(`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Venta — ${esc(inv.name)}`,`
+  crmOpenModal(`Venta — ${inv.name}`,`
     <div class="crm-form-row">
       <div class="crm-form-group"><label class="crm-form-label">Cantidad (${esc(inv.unit||'ud')}) *</label>
         <input type="number" class="crm-form-ctrl" id="vt-qty" min="0.01" step="0.01" placeholder="1" value="1" oninput="vtCalcTotal()"/>
@@ -3976,7 +4108,7 @@ function ventaTienda(invId){
     ${biz.holded_key?'<div style="margin-top:8px;font-size:11px;color:#16a34a;font-weight:600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Se sincronizará automáticamente con Holded</div>':'<div style="margin-top:8px;font-size:11px;color:#94a3b8">Sin Holded configurado — solo se registra localmente</div>'}
     <div style="font-size:12px;color:#64748b;margin-top:4px">Stock actual: <strong>${inv.stock} ${esc(inv.unit||'ud')}</strong></div>`,
     `<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button>
-     <button class="btn btn-accent" onclick="confirmarVentaTienda('${invId}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Confirmar venta</button>`);
+     <button class="btn btn-accent" id="vt-btn-confirmar" onclick="confirmarVentaTienda('${invId}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Confirmar venta</button>`);
 }
 function vtCalcTotal(){
   const biz=getBizInfo();const ivaPct=biz.iva_pct||0;
@@ -3985,7 +4117,9 @@ function vtCalcTotal(){
   const t=q*p*(1+ivaPct/100);
   const el=document.getElementById('vt-total');if(el)el.textContent=crmFmt(t);
 }
+let _vtProcesando=false;
 async function confirmarVentaTienda(invId){
+  if(_vtProcesando)return;
   const inv=_crmInventario.find(x=>x.id===invId);if(!inv)return;
   const qty=parseFloat(cv('vt-qty'));if(!qty||qty<=0){alert('Cantidad inválida');return;}
   const price=parseFloat(cv('vt-price'));if(isNaN(price)||price<0){alert('Precio inválido');return;}
@@ -3993,23 +4127,31 @@ async function confirmarVentaTienda(invId){
   const metodo=cv('vt-metodo');
   const biz=getBizInfo();const ivaPct=biz.iva_pct||0;
   const total=qty*price*(1+ivaPct/100);
-  // 1. Descontar stock
-  const newStock=Math.max(0,inv.stock-qty);
-  await _sb.from('crm_inventory').update({stock:newStock}).eq('id',invId);
-  await _sb.from('crm_inventory_movements').insert({business_slug:BIZ_SLUG,inventory_id:invId,tipo:'salida',cantidad:qty,motivo:`Venta tienda — ${clientName}`});
-  // 2. Registrar en facturas_compra como ingreso (tabla separada)
-  const today=new Date().toISOString().split('T')[0];
-  const invoice_number=await _nextInvoiceNum('ticket');
-  await _sb.from('crm_invoices').insert({business_slug:BIZ_SLUG,client_name:clientName,type:'ticket',status:'pagado',items:[{desc:inv.name,qty,price}],total,issue_date:today,notes:`Venta tienda · ${metodo}`,invoice_number});
-  // 3. Holded sync
-  const holdedRes=await holdedSync('invoices',{
-    desc:`Venta: ${inv.name}`,date:Math.floor(Date.now()/1000),
-    contact:{name:clientName},
-    products:[{name:inv.name,units:qty,subtotal:price*qty,tax:ivaPct}]
-  });
-  crmCloseModal();
-  crmLoadInventario();
-  showToast(`Venta registrada${holdedRes?' · Holded ':''}`);
+  _vtProcesando=true;
+  const btn=document.getElementById('vt-btn-confirmar');
+  if(btn)btn.disabled=true;
+  try{
+    const invoice_number=await _nextInvoiceNum('ticket');
+    // Stock + movimiento + factura en una sola transacción SQL atómica (evita doble clic, venta parcial y sobreventa)
+    const {data:factura,error}=await _sb.rpc('confirmar_venta_tienda_atomic',{
+      p_slug:BIZ_SLUG, p_inv_id:invId, p_qty:qty, p_client_name:clientName,
+      p_metodo:metodo, p_total:total, p_item_name:inv.name, p_price:price,
+      p_invoice_number:invoice_number
+    });
+    if(error){ alert('⚠ Error al registrar la venta: '+error.message+' — la venta NO se ha guardado.'); console.error(error); return; }
+    // Holded sync (best-effort, no bloquea si falla)
+    const holdedRes=await holdedSync('invoices',{
+      desc:`Venta: ${inv.name}`,date:Math.floor(Date.now()/1000),
+      contact:{name:clientName},
+      products:[{name:inv.name,units:qty,subtotal:price*qty,tax:ivaPct}]
+    });
+    crmCloseModal();
+    crmLoadInventario();
+    showToast(`Venta registrada${holdedRes?' · Holded ✓':''}`);
+  } finally {
+    _vtProcesando=false;
+    if(btn)btn.disabled=false;
+  }
 }
 
 // ── RECORDATORIO EMAIL ─────────────────────────────────────────────────────
@@ -4033,6 +4175,39 @@ async function enviarRecordatorio(citaId){
   })
   .then(()=>showToast(' Recordatorio enviado a '+c.client_email))
   .catch(e=>showToast('Error:'+JSON.stringify(e)));
+}
+
+// ── RECORDATORIOS AUTOMÁTICOS 24H ─────────────────────────────────────────
+function _checkRecordatoriosAutomaticos(){
+  const KEY='reminders_sent_'+BIZ_SLUG;
+  const sent=JSON.parse(localStorage.getItem(KEY)||'{}');
+  const now=Date.now();
+  const in22h=now+22*60*60*1000;
+  const in26h=now+26*60*60*1000;
+  const biz=getBizInfo();
+  allCitas.forEach(c=>{
+    if(c.status==='cancelled'||c.status==='no_show')return;
+    if(!c.client_email)return;
+    if(sent[c.id])return;
+    const t=new Date(c.starts_at).getTime();
+    if(t>=in22h&&t<=in26h){
+      sent[c.id]=now;
+      localStorage.setItem(KEY,JSON.stringify(sent));
+      const dt=new Date(c.starts_at);
+      emailjs.send('service_npmjvvf','template_qnip0mc',{
+        cliente_nombre:c.client_name,
+        cliente_email:c.client_email,
+        cliente_telefono:c.client_phone||'—',
+        negocio_nombre:biz.name||BIZ_NAME,
+        servicio:`RECORDATORIO — ${c.service||'Cita'}`,
+        duracion:(c.duration_minutes||60)+' min',precio:'',
+        fecha:dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
+        hora:dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+        reply_to:biz.email||'airmateai@gmail.com',
+        notes:'Este es un recordatorio automático de tu cita de mañana. Te esperamos en '+(biz.address||'nuestro local')+'.'
+      }).then(()=>notificar('📧 Recordatorio enviado a '+c.client_name)).catch(()=>{});
+    }
+  });
 }
 
 // ── CONTRATO DE ENCARGO ────────────────────────────────────────────────────
@@ -4090,13 +4265,19 @@ async function imprimirContrato(id){
     <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 10px 10px;padding:32px 24px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
         <div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:40px">Firma del sastre</div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Firma comercio</div>
+          ${(function(){var s=typeof getSignature==='function'?getSignature('order_'+o.id+'_comercio'):null;return s?`<img src="${s}" style="max-width:180px;max-height:70px;display:block;margin-bottom:2px"/>`:'<div style="height:44px"></div>';})()}
           <div style="border-top:2px solid #0f172a;padding-top:6px;font-size:12px;font-weight:600">${esc(biz.name||BIZ_NAME)}</div>
         </div>
         <div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:40px">Firma del cliente</div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Firma cliente</div>
+          ${(function(){var s=typeof getSignature==='function'?getSignature('order_'+o.id+'_cliente'):null;return s?`<img src="${s}" style="max-width:180px;max-height:70px;display:block;margin-bottom:2px"/>`:'<div style="height:44px"></div>';})()}
           <div style="border-top:2px solid #0f172a;padding-top:6px;font-size:12px;font-weight:600">${esc(o.client_name||'')}</div>
         </div>
+      </div>
+      <div class="no-print" style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-ghost btn-xs" onclick="sigpadOpen('order_${o.id}_comercio',function(){imprimirContrato('${o.id}')},'crm_orders')">✎ Firmar (comercio)</button>
+        <button class="btn btn-ghost btn-xs" onclick="sigpadOpen('order_${o.id}_cliente',function(){imprimirContrato('${o.id}')},'crm_orders')">✎ Firmar (cliente)</button>
       </div>
     </div>
     <div style="margin-top:16px;text-align:center;font-size:10px;color:#cbd5e1">Generado con Airmate · ${new Date().toLocaleDateString('es-ES')}</div>
@@ -4659,7 +4840,7 @@ async function _doEnviarEmailDoc(id){
   const lineas=(f.lines||[]).map(l=>`• ${l.desc} × ${l.qty} — ${crmFmt(l.price*l.qty)}`).join('\n')||'Consulte el documento para ver el detalle.';
   const biz=getBizInfo();
   const subject=`${tipDoc} ${num} — ${biz.name||'Jose Acosta Style'}`;
-  emailjs.send('service_npmjvvf','template_lg1l7bi',{
+  emailjs.send('service_npmjvvf','template_6arpdfi',{
     cliente_nombre: f.client_name||'Cliente',
     cliente_email: toEmail,
     cliente_telefono: '—',
@@ -6170,47 +6351,56 @@ function tpvSetPago(tipo) {
   });
 }
 
+let _tpvProcesando=false;
 async function tpvCobrar() {
+  if(_tpvProcesando)return;
   if(_tpvCarrito.length===0){showToast('Añade productos al ticket');return;}
-  // IGIC mixto: retail=incluido 7%, sastrería=añadido 7%
-  var totBase=0,totIgic=0,totTotal=0;
-  _tpvCarrito.forEach(function(c){var li=tpvCalcLineaIGIC(c);totBase+=li.base;totIgic+=li.igic;totTotal+=li.total;});
-  var sub=Math.round(totBase*100)/100;
-  var igic=Math.round(totIgic*100)/100;
-  var total=Math.round(totTotal*100)/100;
-  var lineas=_tpvCarrito.map(function(c){return {id:c.id,nombre:c.nombre,precio:c.precio,qty:c.qty};});
-  var prods=_tpvCarrito.map(function(c){return c.nombre+(c.qty>1?' ×'+c.qty:'');}).join(', ');
+  _tpvProcesando=true;
+  const btn=document.getElementById('tpv-btn-cobrar');
+  if(btn)btn.disabled=true;
+  try{
+    // IGIC mixto: retail=incluido 7%, sastrería=añadido 7%
+    var totBase=0,totIgic=0,totTotal=0;
+    _tpvCarrito.forEach(function(c){var li=tpvCalcLineaIGIC(c);totBase+=li.base;totIgic+=li.igic;totTotal+=li.total;});
+    var sub=Math.round(totBase*100)/100;
+    var igic=Math.round(totIgic*100)/100;
+    var total=Math.round(totTotal*100)/100;
+    var lineas=_tpvCarrito.map(function(c){return {id:c.id,nombre:c.nombre,precio:c.precio,qty:c.qty};});
+    var prods=_tpvCarrito.map(function(c){return c.nombre+(c.qty>1?' ×'+c.qty:'');}).join(', ');
 
-  // Guardar en Supabase
-  const {data:venta,error} = await _sb.from('ja_ventas').insert({
-    biz_slug: BIZ_SLUG,
-    lineas: lineas,
-    subtotal: Math.round(sub*100)/100,
-    igic: Math.round(igic*100)/100,
-    total: Math.round(total*100)/100,
-    metodo_pago: _tpvPago,
-    cliente_nombre: null
-  }).select().single();
+    // Venta + descuento de stock atómico en una sola transacción SQL (evita doble clic, ventas parciales y sobreventa)
+    const {data:venta,error} = await _sb.rpc('tpv_cobrar_atomic',{
+      p_slug: BIZ_SLUG,
+      p_lineas: lineas,
+      p_subtotal: sub,
+      p_igic: igic,
+      p_total: total,
+      p_metodo: _tpvPago,
+      p_cliente_nombre: null
+    });
 
-  if(error){ showToast('️ Error al guardar venta'); console.error(error); return; }
+    if(error){ showToast('⚠ Error al guardar venta: '+error.message); console.error(error); return; }
 
-  // Descontar stock
-  for(var c of _tpvCarrito){
-    var p=TPV_PRODUCTOS.find(function(x){return x.id===c.id;});
-    if(p){ p.stock=Math.max(0,p.stock-c.qty); }
-    await _sb.from('crm_inventory').update({stock:Math.max(0,(p?.stock||0))}).eq('id',c.id);
+    // Reflejar stock descontado en memoria local
+    _tpvCarrito.forEach(function(c){
+      var p=TPV_PRODUCTOS.find(function(x){return x.id===c.id;});
+      if(p)p.stock=Math.max(0,p.stock-c.qty);
+    });
+
+    var nueva={id:venta.id.slice(0,8).toUpperCase(),
+      fecha:new Date().toLocaleDateString('es-ES'),
+      hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
+      productos:prods,total:total,pago:_tpvPago,cliente:'—'};
+    TPV_HISTORIAL.unshift(nueva);
+    var carritoCopy=_tpvCarrito.slice();
+    tpvLimpiar();
+    tpvRenderStats();
+    showToast('Venta registrada — '+total.toFixed(2)+' €');
+    tpvTicketModal(nueva,carritoCopy,sub,total);
+  } finally {
+    _tpvProcesando=false;
+    if(btn)btn.disabled=false;
   }
-
-  var nueva={id:venta.id.slice(0,8).toUpperCase(),
-    fecha:new Date().toLocaleDateString('es-ES'),
-    hora:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}),
-    productos:prods,total:total,pago:_tpvPago,cliente:'—'};
-  TPV_HISTORIAL.unshift(nueva);
-  var carritoCopy=_tpvCarrito.slice();
-  tpvLimpiar();
-  tpvRenderStats();
-  showToast('Venta registrada — '+total.toFixed(2)+' €');
-  tpvTicketModal(nueva,carritoCopy,sub,total);
 }
 
 function tpvTicketModal(venta, lineas, sub, total) {
@@ -6452,7 +6642,7 @@ function _doTpvEnviarRecibo(ventaId){
   if(!toEmail||!toEmail.includes('@')){showToast('Introduce un email válido');return;}
   const v=TPV_HISTORIAL.find(x=>x.id===ventaId)||TPV_HISTORIAL[0];
   const biz=getBizInfo();
-  emailjs.send('service_npmjvvf','template_lg1l7bi',{
+  emailjs.send('service_npmjvvf','template_6arpdfi',{
     cliente_nombre:'Cliente',
     cliente_email:toEmail,
     cliente_telefono:'—',
@@ -6787,7 +6977,7 @@ async function iaResumenDashboard() {
     const hoy = new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
     const citasHoy = (allCitas||[]).filter(c=>c.status!=='cancelled'&&new Date(c.starts_at).toDateString()===new Date().toDateString());
     const leadsNew = (allLeads||[]).filter(l=>l.status==='new');
-    const listos = (_allEncargos||[]).filter(o=>o.status==='listo'||o.status==='prueba');
+    const listos = (_allEncargos||[]).filter(o=>o.status==='listo');
     const ctx = `Hoy es ${hoy}. Citas de hoy: ${citasHoy.map(c=>c.client_name+' ('+c.service+')').join(', ')||'ninguna'}. Leads nuevos: ${leadsNew.map(l=>l.name+' - '+l.interest).join(', ')||'ninguno'}. Encargos listos: ${listos.map(o=>o.client_name+': '+o.title).join(', ')||'ninguno'}.`;
     const res = await fetch(IA_PROXY, {
       method:'POST',
@@ -7462,7 +7652,7 @@ mark.gs-hl{background:rgba(196,163,90,.35);color:#fff;border-radius:2px;padding:
 </div>
 <script>
 (function(){
-  var _cv,_ctx,_drawing=false,_invoiceId=null,_cb=null;
+  var _cv,_ctx,_drawing=false,_invoiceId=null,_cb=null,_sigTable='crm_invoices';
   function _init(){
     _cv=document.getElementById('sigpad-canvas');if(!_cv)return;
     var dpr=window.devicePixelRatio||1;
@@ -7482,8 +7672,8 @@ mark.gs-hl{background:rgba(196,163,90,.35);color:#fff;border-radius:2px;padding:
   function _move(e){if(!_drawing)return;e.preventDefault();var p=_pos(e);_ctx.lineTo(p[0],p[1]);_ctx.stroke();}
   function _end(){_drawing=false;}
 
-  window.sigpadOpen=function(invoiceId,callback){
-    _invoiceId=invoiceId;_cb=callback||null;
+  window.sigpadOpen=function(invoiceId,callback,table){
+    _invoiceId=invoiceId;_cb=callback||null;_sigTable=table||'crm_invoices';
     document.getElementById('sigpad-overlay').classList.add('open');
     setTimeout(function(){
       _init();
@@ -7506,10 +7696,25 @@ mark.gs-hl{background:rgba(196,163,90,.35);color:#fff;border-radius:2px;padding:
     if(_invoiceId){
       localStorage.setItem('sig_'+_invoiceId,dataUrl);
       localStorage.setItem('sig_'+_invoiceId+'_at',new Date().toISOString());
-      // Intentar persistir en DB (requiere columnas signature_data y signed_at)
       try{
         if(typeof _sb!=='undefined'){
-          _sb.from('crm_invoices').update({signature_data:dataUrl,signed_at:new Date().toISOString()}).eq('id',_invoiceId).then(function(){});
+          if(_sigTable==='crm_orders'){
+            // clave compuesta 'order_<id>_comercio' / 'order_<id>_cliente' — se guardan
+            // ambas firmas en una sola columna jsonb "signatures" del pedido, para
+            // que queden registradas en el contrato (crm_orders no tiene columnas
+            // separadas por firmante)
+            var m=/^order_(.+)_(comercio|cliente)$/.exec(_invoiceId);
+            if(m){
+              var orderId=m[1],who=m[2];
+              _sb.from('crm_orders').select('signatures').eq('id',orderId).single().then(function(res){
+                var sigs=(res&&res.data&&res.data.signatures)||{};
+                sigs[who]={data:dataUrl,at:new Date().toISOString()};
+                _sb.from('crm_orders').update({signatures:sigs}).eq('id',orderId).then(function(){});
+              });
+            }
+          } else {
+            _sb.from('crm_invoices').update({signature_data:dataUrl,signed_at:new Date().toISOString()}).eq('id',_invoiceId).then(function(){});
+          }
         }
       }catch(e){}
     }
