@@ -177,10 +177,10 @@ button{font-family:inherit;cursor:pointer;}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:6px;font-size:12.5px;font-weight:600;border:none;transition:all .2s;cursor:pointer;font-family:inherit;letter-spacing:.03em;}
-.btn-primary{background:var(--nav);color:#fff;}.btn-primary:hover{background:var(--nav2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15);}
-.btn-accent{background:linear-gradient(135deg,#c4a35a 0%,#b89a5e 100%);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.15) inset;}.btn-accent:hover{background:linear-gradient(135deg,#b89a5e 0%,#a48645 100%);transform:translateY(-1px);box-shadow:0 4px 14px rgba(196,163,90,.35);}
-.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--bg);color:var(--txt);border-color:rgba(196,163,90,.4);}
-.btn-danger{background:#fef2f2;color:var(--danger);border:1px solid #fecaca;}.btn-danger:hover{background:#fee2e2;}
+.btn-primary{background:#2a2a2a;color:#fff;}.btn-primary:hover{background:#1a1a1a;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15);}
+.btn-accent{background:#2a2a2a;color:#fff;}.btn-accent:hover{background:#1a1a1a;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2);}
+.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--border);}.btn-ghost:hover{background:var(--bg);color:var(--txt);border-color:var(--txt2);}
+.btn-danger{background:transparent;color:var(--txt2);border:1px solid var(--border);}.btn-danger:hover{background:var(--bg);color:var(--txt);}
 .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
 .btn-xs{padding:3px 8px;font-size:11px;border-radius:5px;}
 
@@ -2000,7 +2000,7 @@ function renderDashboard(){
     </div>
     ${encargosPendEntrega.length?`<div class="card">
       <div class="card-hd"><div class="card-hd-title">Listos para avisar</div><button class="btn btn-ghost btn-sm" onclick="showTab('crm-encargos',document.getElementById('nav-crm-encargos'))">Ver encargos</button></div>
-      ${encargosPendEntrega.map(o=>`<div class="dash-row"><div class="dash-color-bar" style="background:#22c55e"></div><div><div class="dash-row-name">${esc(o.title)}</div><div class="dash-row-sub">${esc(o.client_name||'—')} · ${o.status==='listo'?'Listo para recoger':'Listo para prueba'}</div></div><button class="btn btn-xs" style="margin-left:auto;background:linear-gradient(135deg,rgba(196,163,90,.2),rgba(196,163,90,.1));color:#c4a35a;border:1px solid rgba(196,163,90,.35)" onclick="iaRedactarWhatsApp('encargo','${esc(o.client_name||'')}','${esc(o.title)}','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> Avisar</button></div>`).join('')}
+      ${encargosPendEntrega.map(o=>`<div class="dash-row"><div class="dash-color-bar" style="background:#22c55e"></div><div><div class="dash-row-name">${esc(o.title)}</div><div class="dash-row-sub">${esc(o.client_name||'—')} · ${o.status==='listo'?'Listo para recoger':'Listo para prueba'}</div></div><button class="btn btn-xs" style="margin-left:auto" onclick="iaRedactarWhatsApp('encargo','${esc(o.client_name||'')}','${esc(o.title)}','')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> Avisar</button></div>`).join('')}
     </div>`:''}
     <div class="card">
       <div class="card-hd"><div class="card-hd-title">Seguimientos</div><button class="btn btn-ghost btn-sm" onclick="showTab('seguimientos',document.getElementById('nav-seguimientos'))">Ver todos</button></div>
@@ -2163,8 +2163,8 @@ function renderCitasList(){
         <button class="btn btn-ghost btn-xs" onclick="openCitaModal('${c.id}')">Ver</button>
         <button class="btn btn-ghost btn-xs" onclick="openEditCitaModal('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         <button class="btn btn-accent btn-xs" onclick="cambiarEstadoCita('${c.id}','confirmed')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Confirmar</button>
-        <button class="btn btn-xs" style="background:#e0f2fe;color:#0369a1" onclick="crearClienteDesdeCita('${c.id}')">→ CRM</button>
-        ${d?`<button class="btn btn-xs" style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff" onclick="crearEncargoDesdesCita('${c.id}')"> Encargo</button>`:''}
+        <button class="btn btn-xs" onclick="crearClienteDesdeCita('${c.id}')">→ CRM</button>
+        ${d?`<button class="btn btn-xs" onclick="crearEncargoDesdesCita('${c.id}')"> Encargo</button>`:''}
       </td>
     </tr>`;}).join('')+
   '</tbody></table></div>';
@@ -2192,14 +2192,14 @@ function openCitaModal(id){
         </div>
       </div>`:'';})()}
       <div class="modal-actions">
-        <button class="btn" style="background:#c4a35a;color:#0a0a0a;border:none;font-weight:700" onclick="iaRedactarWhatsApp('cita','${esc(c.client_name)}','${esc(c.service)}','${new Date(c.starts_at).toLocaleDateString('es-ES')}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> Redactar WhatsApp</button>
+        <button class="btn" style="font-weight:700" onclick="iaRedactarWhatsApp('cita','${esc(c.client_name)}','${esc(c.service)}','${new Date(c.starts_at).toLocaleDateString('es-ES')}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> Redactar WhatsApp</button>
         <button class="btn btn-accent" onclick="cambiarEstadoCita('${c.id}','confirmed');closeModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Confirmar</button>
-        <button class="btn btn-ghost" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="cambiarEstadoCita('${c.id}','completed');closeModal()">✔ Completar</button>
+        <button class="btn btn-ghost" onclick="cambiarEstadoCita('${c.id}','completed');closeModal()">✔ Completar</button>
         <button class="btn btn-ghost" onclick="closeModal();openEditCitaModal('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
         <button class="btn btn-danger" onclick="cambiarEstadoCita('${c.id}','cancelled');closeModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar</button>
-        <button class="btn btn-ghost" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" onclick="crearClienteDesdeCita('${c.id}')">→ CRM</button>
-        ${c.client_email?`<button class="btn btn-ghost" style="background:#fef9c3;color:#92400e;border-color:#fde68a" onclick="enviarRecordatorio('${c.id}')"> Recordatorio</button>`:''}
-        ${_parseCitaDesign(c)?`<button class="btn" style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff" onclick="closeModal();crearEncargoDesdesCita('${c.id}')"> Crear encargo</button>`:''}
+        <button class="btn btn-ghost" onclick="crearClienteDesdeCita('${c.id}')">→ CRM</button>
+        ${c.client_email?`<button class="btn btn-ghost" onclick="enviarRecordatorio('${c.id}')"> Recordatorio</button>`:''}
+        ${_parseCitaDesign(c)?`<button class="btn" onclick="closeModal();crearEncargoDesdesCita('${c.id}')"> Crear encargo</button>`:''}
       </div>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2361,7 +2361,7 @@ function renderLeads(){
         <td><span class="tag tag-${l.intent_level||'cold'}">${intentLabel(l.intent_level)}</span></td>
         <td><span class="tag tag-${l.status}">${statusLead(l.status)}</span></td>
         <td>${l.follow_up_date||'—'}</td>
-        <td><button class="btn btn-xs" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd" onclick="leadToCRM('${l.id}')">→ CRM</button></td>
+        <td><button class="btn btn-xs" onclick="leadToCRM('${l.id}')">→ CRM</button></td>
       </tr>`).join(''):'<tr><td colspan="7" class="empty-state">Sin leads</td></tr>')+
     '</tbody></table></div></div>';
     return;
@@ -2384,8 +2384,8 @@ function renderLeads(){
             <div class="lead-card-foot">
               <span class="tag tag-${l.intent_level||'cold'}">${intentLabel(l.intent_level)}</span>
               <div style="display:flex;gap:4px;" onclick="event.stopPropagation()">
-                ${l.phone?`<a href="https://wa.me/${l.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-xs" style="background:#25d366;color:#fff;">WA</a>`:''}
-                <button class="btn btn-xs" style="background:linear-gradient(135deg,rgba(196,163,90,.2),rgba(196,163,90,.1));color:#c4a35a;border:1px solid rgba(196,163,90,.35)" onclick="iaRedactarWhatsApp('lead','${esc(l.name)}','${esc(l.interest||'')}','${esc(l.phone||'')}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> IA</button>
+                ${l.phone?`<a href="https://wa.me/${l.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-xs">WA</a>`:''}
+                <button class="btn btn-xs" onclick="iaRedactarWhatsApp('lead','${esc(l.name)}','${esc(l.interest||'')}','${esc(l.phone||'')}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> IA</button>
               </div>
             </div>
           </div>`).join('')}
@@ -2417,7 +2417,7 @@ function openLeadModal(id){
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
-        <button class="btn btn-ghost" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" onclick="leadToCRM('${l.id}');closeModal()">→ Convertir a CRM</button>
+        <button class="btn btn-ghost" onclick="leadToCRM('${l.id}');closeModal()">→ Convertir a CRM</button>
       </div>
     </div>`;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2436,7 +2436,7 @@ function renderSeguimientos(){
       <td><span class="tag tag-${l.intent_level||'cold'}">${intentLabel(l.intent_level)}</span></td>
       <td style="display:flex;gap:5px">
         <button class="btn btn-ghost btn-xs" onclick="editSegFecha('${l.id}','${l.follow_up_date}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
-        <button class="btn btn-ghost btn-xs" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" onclick="leadToCRM('${l.id}')">→ CRM</button>
+        <button class="btn btn-ghost btn-xs" onclick="leadToCRM('${l.id}')">→ CRM</button>
       </td>
     </tr>`).join('')+
   '</tbody></table></div></div>':'<div class="empty-state">Sin seguimientos pendientes <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg></div>';
@@ -2596,7 +2596,7 @@ async function crmVerCliente(id){
         <span class="tag ${stCls}" style="font-size:10px">${f.status}</span>
         <span style="font-size:11px;color:#94a3b8;margin-left:2px">${f.issue_date?new Date(f.issue_date).toLocaleDateString('es-ES'):'—'}</span>
         <div style="margin-left:auto;font-weight:700;font-size:13px">${crmFmt(f.total||0)}</div>
-        ${f.status!=='pagado'&&f.type==='factura'?`<button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;font-size:10px" onclick="marcarPagada('${f.id}');crmCloseModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrar</button>`:''}
+        ${f.status!=='pagado'&&f.type==='factura'?`<button class="btn btn-xs" style="font-size:10px" onclick="marcarPagada('${f.id}');crmCloseModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrar</button>`:''}
       </div>`;}).join('')+'</div>':'<p style="color:#94a3b8;font-size:13px">Sin documentos</p>';
   // <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 3l1.9 5.8L20 11l-6.1 1.2L12 19l-2-6.8L4 11l6-2.2z"/></svg> VIP automático según facturación anual
   const yearAgo=new Date();yearAgo.setFullYear(yearAgo.getFullYear()-1);
@@ -3100,8 +3100,8 @@ async function corpRenderGroups(){
           <div style="font-size:11px;color:rgba(255,255,255,.5)">${esc(g.sector||'')}${g.contacto?' · '+esc(g.contacto):''}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="btn btn-xs" style="background:rgba(255,255,255,.12);color:#fff;border:none" onclick="corpEditGroup('${g.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-          <button class="btn btn-xs" style="background:rgba(255,0,0,.2);color:#fca5a5;border:none" onclick="corpDeleteGroup('${g.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          <button class="btn btn-xs" onclick="corpEditGroup('${g.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="btn btn-xs" onclick="corpDeleteGroup('${g.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
         </div>
       </div>
       <div style="padding:0 14px">
@@ -3287,10 +3287,10 @@ function encKcard(o){
     ${o.price?`<div class="crm-kcard-price">${crmFmt(o.price)}</div>`:''}
     <div class="crm-kcard-actions">
       <button class="btn btn-ghost btn-xs" onclick="crmEditEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
-      <button class="btn btn-xs" style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff" onclick="openSuitDesigner('${o.id}')">Diseño</button>
-      <button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="generarFacturaDesdeEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg> Factura</button>
-      <button class="btn btn-xs" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0" onclick="imprimirContrato('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Contrato</button>
-      <button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-weight:700" onclick="imprimirTaller('${o.id}')"> Ajustes</button>
+      <button class="btn btn-xs" onclick="openSuitDesigner('${o.id}')">Diseño</button>
+      <button class="btn btn-xs" onclick="generarFacturaDesdeEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg> Factura</button>
+      <button class="btn btn-xs" onclick="imprimirContrato('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Contrato</button>
+      <button class="btn btn-xs" style="font-weight:700" onclick="imprimirTaller('${o.id}')"> Ajustes</button>
     </div>
   </div>`;
 }
@@ -3722,9 +3722,9 @@ async function crmLoadInventario(){
       <td>${pc}</td>
       <td>${isLow?`<span class="tag tag-hot" style="cursor:pointer" onclick="crmAbrirSolicitarPedido('${i.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Bajo</span>`:'<span class="tag tag-confirmed">OK</span>'}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
-        <button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="invMovimiento('${i.id}','entrada')">+ Entrada</button>
-        <button class="btn btn-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca" onclick="invMovimiento('${i.id}','salida')">− Salida</button>
-        <button class="btn btn-xs" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe" onclick="ventaTienda('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Venta</button>
+        <button class="btn btn-xs" onclick="invMovimiento('${i.id}','entrada')">+ Entrada</button>
+        <button class="btn btn-xs" onclick="invMovimiento('${i.id}','salida')">− Salida</button>
+        <button class="btn btn-xs" onclick="ventaTienda('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Venta</button>
         <button class="btn btn-ghost btn-xs" onclick="invVerMovimientos('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></button>
         <button class="btn btn-ghost btn-xs" onclick="crmEditInventario('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         <button class="btn btn-danger btn-xs" onclick="crmDeleteInventario('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
@@ -3880,10 +3880,10 @@ function crmRenderFacturasTable(){
       <td>${f.issue_date?new Date(f.issue_date).toLocaleDateString('es-ES'):'—'}</td>
       <td style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-xs" onclick="crmViewFactura('${f.id}',_crmFacturas.findIndex(x=>x.id==='${f.id}'))"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        <button class="btn btn-xs" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe" onclick="enviarEmailDoc('${f.id}')"></button>
-        ${f.type==='presupuesto'?`<button class="btn btn-xs" style="background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe" onclick="convertirAFactura('${f.id}')">→ Factura</button>`:''}
-        ${f.status!=='pagado'&&f.status!=='cancelado'?`<button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="marcarPagada('${f.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button>`:''}
-        ${f.type==='factura'?(f.verifactu_csv?`<span class="tag" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px;padding:2px 6px" title="Registrada en AEAT · CSV: ${esc(f.verifactu_csv)}"> AEAT</span>`:`<button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="verifactuRegistrar('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Verifactu</button>`):''}
+        <button class="btn btn-xs" onclick="enviarEmailDoc('${f.id}')"></button>
+        ${f.type==='presupuesto'?`<button class="btn btn-xs" onclick="convertirAFactura('${f.id}')">→ Factura</button>`:''}
+        ${f.status!=='pagado'&&f.status!=='cancelado'?`<button class="btn btn-xs" onclick="marcarPagada('${f.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button>`:''}
+        ${f.type==='factura'?(f.verifactu_csv?`<span class="tag" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px;padding:2px 6px" title="Registrada en AEAT · CSV: ${esc(f.verifactu_csv)}"> AEAT</span>`:`<button class="btn btn-xs" onclick="verifactuRegistrar('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Verifactu</button>`):''}
         <button class="btn btn-ghost btn-xs" onclick="crmEditFactura('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         <button class="btn btn-danger btn-xs" onclick="crmDeleteFactura('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
       </td>
@@ -3924,10 +3924,10 @@ function _crmRenderOldTable(){
       <td>${f.issue_date?new Date(f.issue_date).toLocaleDateString('es-ES'):'—'}</td>
       <td style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-xs" onclick="crmViewFactura('${f.id}',${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
-        <button class="btn btn-xs" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe" onclick="enviarEmailDoc('${f.id}')"></button>
-        ${f.type==='presupuesto'?`<button class="btn btn-xs" style="background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe" onclick="convertirAFactura('${f.id}')">→ Factura</button>`:''}
-        ${f.status!=='pagado'&&f.status!=='cancelado'?`<button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="marcarPagada('${f.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button>`:''}
-        ${f.type==='factura'?(f.verifactu_csv?`<span class="tag" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px;padding:2px 6px" title="Registrada en AEAT · CSV: ${esc(f.verifactu_csv)}"> AEAT</span>`:`<button class="btn btn-xs" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="verifactuRegistrar('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Verifactu</button>`):''}
+        <button class="btn btn-xs" onclick="enviarEmailDoc('${f.id}')"></button>
+        ${f.type==='presupuesto'?`<button class="btn btn-xs" onclick="convertirAFactura('${f.id}')">→ Factura</button>`:''}
+        ${f.status!=='pagado'&&f.status!=='cancelado'?`<button class="btn btn-xs" onclick="marcarPagada('${f.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button>`:''}
+        ${f.type==='factura'?(f.verifactu_csv?`<span class="tag" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-size:10px;padding:2px 6px" title="Registrada en AEAT · CSV: ${esc(f.verifactu_csv)}"> AEAT</span>`:`<button class="btn btn-xs" onclick="verifactuRegistrar('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Verifactu</button>`):''}
         <button class="btn btn-ghost btn-xs" onclick="crmEditFactura('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
         <button class="btn btn-danger btn-xs" onclick="crmDeleteFactura('${f.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
       </td>
@@ -5712,7 +5712,7 @@ async function calcVencimientos(){
         <td><span style="font-weight:700;color:${color}">${dias} días</span></td>
         <td><strong>—</strong></td>
         <td><span class="tag tag-pending">${f.status}</span></td>
-        <td><button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="marcarPagada('${f.id}');calcVencimientos()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button></td>
+        <td><button class="btn btn-xs" onclick="marcarPagada('${f.id}');calcVencimientos()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Cobrada</button></td>
       </tr>`;
     }).join('')}
     <tr style="background:#f8fafc;font-weight:700"><td colspan="4">TOTAL PENDIENTE</td><td>—</td><td colspan="2"></td></tr>
@@ -6466,7 +6466,7 @@ function tpvTicketModal(venta, lineas, sub, total) {
   crmOpenModal('Ticket de venta', html,
     '<style>@media print{@page{size:58mm auto;margin:3mm}.crm-modal-overlay,.crm-modal-close,.btn{display:none!important}.crm-modal-box{box-shadow:none!important;width:58mm!important;max-width:58mm!important}}</style>'
     +'<button class="btn btn-primary" onclick="window.print()">Imprimir</button>'
-    +'<button class="btn btn-xs" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer" onclick="tpvEnviarRecibo(\''+venta.id+'\')">Email recibo</button>'
+    +'<button class="btn btn-xs" style="padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer" onclick="tpvEnviarRecibo(\''+venta.id+'\')">Email recibo</button>'
     +'<button class="btn btn-ghost" onclick="crmCloseModal()">Cerrar</button>');
 }
 
