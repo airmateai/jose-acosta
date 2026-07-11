@@ -14,3 +14,7 @@ alter table crm_orders
 --    - status 'prueba' (columna eliminada del kanban) -> 'ajustes'
 update crm_orders set status='presupuesto' where status='pendiente';
 update crm_orders set status='ajustes' where status='prueba';
+
+-- 4) Fotos del cliente (hasta 3 — cuerpo para patron, o diseños que le gustan)
+alter table crm_clients
+  add column if not exists fotos jsonb;
