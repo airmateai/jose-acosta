@@ -1981,8 +1981,8 @@ function renderDashboard(){
   const encargosPendEntrega=_allEncargos.filter(o=>o.status==='listo'||o.status==='listo_prueba').slice(0,4);
   const stockAlertCard=lowStock.length?`
     <div class="card" style="grid-column:1/-1">
-      <div class="card-hd"><div class="card-hd-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>️ Stock bajo en inventario</div><button class="btn btn-ghost btn-sm" onclick="showTab('crm-stock',document.getElementById('nav-crm-stock'))">Ver inventario</button></div>
-      ${lowStock.map(i=>`<div class="dash-row"><div class="dash-color-bar" style="background:#ef4444"></div><div><div class="dash-row-name">${esc(i.name)}</div><div class="dash-row-sub">${esc(i.category||'')} · Stock: ${i.stock} ${esc(i.unit||'')} (mín. ${i.min_stock})</div></div><span class="tag tag-hot" style="margin-left:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reponer</span></div>`).join('')}
+      <div class="card-hd"><div class="card-hd-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>️ Stock bajo en inventario</div><div style="display:flex;gap:8px"><button class="btn btn-accent btn-sm" onclick="crmAbrirSolicitarPedido()">Solicitar pedido</button><button class="btn btn-ghost btn-sm" onclick="showTab('crm-stock',document.getElementById('nav-crm-stock'))">Ver inventario</button></div></div>
+      ${lowStock.map(i=>`<div class="dash-row"><div class="dash-color-bar" style="background:#ef4444"></div><div><div class="dash-row-name">${esc(i.name)}</div><div class="dash-row-sub">${esc(i.category||'')} · Stock: ${i.stock} ${esc(i.unit||'')} (mín. ${i.min_stock})</div></div><span class="tag tag-hot" style="margin-left:auto;cursor:pointer" onclick="crmAbrirSolicitarPedido('${i.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reponer</span></div>`).join('')}
     </div>`:'';
   document.getElementById('dash-panels').innerHTML=`
     <div id="ia-resumen-card" class="card" style="background:linear-gradient(135deg,#1a1400,#0f0f0f);border:1px solid rgba(196,163,90,.4);cursor:pointer;color:#e8e8e8" onclick="if(!event.target.closest('button')){}">
@@ -3704,7 +3704,7 @@ async function crmLoadInventario(){
   _crmInventario=data||[];
   const low=_crmInventario.filter(i=>i.min_stock!==null&&i.stock<=i.min_stock);
   const al=document.getElementById('crm-stock-alert');
-  if(low.length){al.style.display='flex';al.innerHTML='️ Stock bajo en: '+low.map(i=>'<strong>'+esc(i.name)+'</strong>').join(', ');}
+  if(low.length){al.style.display='flex';al.innerHTML='️ Stock bajo en: '+low.map(i=>'<strong>'+esc(i.name)+'</strong>').join(', ')+' <button class="btn btn-accent btn-xs" style="margin-left:8px" onclick="crmAbrirSolicitarPedido()">Solicitar pedido</button>';}
   else al.style.display='none';
   const tb=document.getElementById('crm-inventario-tbody');
   if(!_crmInventario.length){tb.innerHTML='<tr><td colspan="9" class="empty-state">Sin materiales registrados</td></tr>';return;}
@@ -3720,7 +3720,7 @@ async function crmLoadInventario(){
       <td class="${isLow?'stock-low':'stock-ok'}">${i.stock} ${esc(i.unit||'')}</td>
       <td>${i.min_stock!==null?i.min_stock:'—'}</td><td>${esc(i.unit||'ud')}</td>
       <td>${pc}</td>
-      <td>${isLow?'<span class="tag tag-hot"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Bajo</span>':'<span class="tag tag-confirmed">OK</span>'}</td>
+      <td>${isLow?`<span class="tag tag-hot" style="cursor:pointer" onclick="crmAbrirSolicitarPedido('${i.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Bajo</span>`:'<span class="tag tag-confirmed">OK</span>'}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-xs" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0" onclick="invMovimiento('${i.id}','entrada')">+ Entrada</button>
         <button class="btn btn-xs" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca" onclick="invMovimiento('${i.id}','salida')">− Salida</button>
@@ -3759,8 +3759,38 @@ function crmInvForm(i={}){return `
       </select>
     </div>
   </div>
-  <div class="crm-form-group"><label class="crm-form-label">Foto del producto (URL)</label><input class="crm-form-ctrl" id="if-img" placeholder="https://..." value="${esc(i.image_url||'')}"/>
-    ${i.image_url?`<img src="${esc(i.image_url)}" style="margin-top:8px;width:100%;max-height:120px;object-fit:cover;border-radius:8px"/>`:''}</div>`;}
+  <div class="crm-form-group"><label class="crm-form-label">Foto del producto</label>
+    <input type="hidden" id="if-img" value="${esc(i.image_url||'')}"/>
+    <input type="file" accept="image/*" capture="environment" style="display:none" id="if-img-file" onchange="ifUploadImg(this)">
+    <button type="button" class="btn btn-ghost" style="width:100%" onclick="document.getElementById('if-img-file').click()">📷 Subir foto</button>
+    <div id="if-img-status" style="font-size:12px;color:#64748b;margin-top:4px"></div>
+    <img id="if-img-preview" src="${esc(i.image_url||'')}" style="margin-top:8px;width:100%;max-height:120px;object-fit:cover;border-radius:8px;${i.image_url?'':'display:none'}"/>
+  </div>`;}
+async function ifUploadImg(input){
+  const file=input.files[0];if(!file)return;
+  const status=document.getElementById('if-img-status');
+  status.textContent='Subiendo foto…';
+  const ext=file.name.split('.').pop()||'jpg';
+  const path=`${BIZ_SLUG}/productos/${Date.now()}.${ext}`;
+  const {error}=await _sb.storage.from('assets').upload(path,file,{upsert:true,contentType:file.type});
+  if(error){status.textContent='Error al subir: '+error.message;return;}
+  const url=_sb.storage.from('assets').getPublicUrl(path).data.publicUrl;
+  document.getElementById('if-img').value=url;
+  const prev=document.getElementById('if-img-preview');
+  prev.src=url;prev.style.display='block';
+  status.textContent='Foto subida ✓';
+}
+function crmAbrirSolicitarPedido(soloId){
+  const items=soloId?_crmInventario.filter(i=>i.id===soloId):_crmInventario.filter(i=>i.min_stock!==null&&i.stock<=i.min_stock);
+  if(!items.length){showToast('No hay artículos con stock bajo');return;}
+  const lineas=items.map(i=>{const faltan=Math.max((i.min_stock||0)-i.stock,0);return `• ${i.name}${i.category?' ('+i.category+')':''} — quedan ${i.stock} ${i.unit||'ud'}, repone al menos ${faltan||i.min_stock} ${i.unit||'ud'}`;}).join('\n');
+  const texto=`Pedido de reposición — ${BIZ_NAME||'Jose Acosta'}\n\n${lineas}`;
+  const html=`<div class="crm-form-group"><label class="crm-form-label">Texto del pedido</label><textarea class="crm-form-ctrl" id="sp-texto" rows="8" style="font-family:inherit">${esc(texto)}</textarea></div>`;
+  const footer=`<button class="btn btn-ghost" onclick="crmCloseModal()">Cerrar</button><button class="btn btn-ghost" onclick="crmCopiarPedido()">Copiar texto</button><button class="btn btn-accent" onclick="crmEnviarPedidoWhatsapp()">Enviar por WhatsApp</button>`;
+  crmOpenModal('Solicitar pedido a proveedor',html,footer);
+}
+function crmCopiarPedido(){const t=document.getElementById('sp-texto').value;navigator.clipboard.writeText(t).then(()=>showToast('Texto copiado')).catch(()=>showToast('No se pudo copiar'));}
+function crmEnviarPedidoWhatsapp(){const t=document.getElementById('sp-texto').value;window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');}
 function crmOpenInventarioModal(){_crmEditId=null;crmOpenModal('Nuevo producto',crmInvForm(),`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveInventario()">Guardar</button>`);}
 function crmEditInventario(id){const i=_crmInventario.find(x=>x.id===id);if(!i)return;_crmEditId=id;crmOpenModal('Editar producto',crmInvForm(i),`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveInventario()">Guardar</button>`);}
 async function crmSaveInventario(){
