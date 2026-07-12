@@ -1838,7 +1838,7 @@ async function sha256(str){
 }
 
 async function panelLogin(slug,password){
-  const resp=await fetch('https://airmate.es/api/panel-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,password})});
+  const resp=await fetch('https://airmate-phi.vercel.app/api/panel-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,password})});
   const body=await resp.json();
   if(!resp.ok||!body.token)return{error:body.error||'No se pudo verificar el acceso.'};
   return body;
