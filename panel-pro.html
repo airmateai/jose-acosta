@@ -1775,6 +1775,23 @@ function setAuthToken(token){
   _sb=supabase.createClient(SB_URL,SB_KEY,{global:{headers:{Authorization:'Bearer '+token}}});
   _sbSrv=_sb;
 }
+// Mantiene la sesión viva renovando el token solo (con el refresh_token) antes
+// de que caduque, para no depender de volver a hacer login cada hora.
+let _authClient=null;
+async function startAuthSession(access_token,refresh_token){
+  _authClient=supabase.createClient(SB_URL,SB_KEY);
+  await _authClient.auth.setSession({access_token,refresh_token});
+  _authClient.auth.onAuthStateChange((event,session)=>{
+    if(session){
+      try{
+        const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'{}');
+        saved.token=session.access_token;saved.refresh=session.refresh_token;
+        localStorage.setItem(SESSION_KEY,JSON.stringify(saved));
+      }catch(e){}
+      setAuthToken(session.access_token);
+    }
+  });
+}
 
 let BIZ_SLUG='',BIZ_NAME='';
 let allCitas=[],allLeads=[];
@@ -1855,7 +1872,8 @@ async function doLogin(){
   if(body.error){errEl.textContent=body.error;errEl.style.display='block';btn.disabled=false;btn.textContent='Acceder al panel';return;}
   BIZ_SLUG=body.business_slug;BIZ_NAME=body.bot_name||slugInput;
   setAuthToken(body.token);
-  localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token}));
+  localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token,refresh:body.refresh_token}));
+  await startAuthSession(body.token,body.refresh_token);
   enterApp(BIZ_NAME);
 }
 
@@ -1865,7 +1883,7 @@ async function doLogin(){
   if(saved){
     try{
       const s=JSON.parse(saved);
-      if(s.token){BIZ_SLUG=s.slug;BIZ_NAME=s.name;setAuthToken(s.token);enterApp(BIZ_NAME);return;}
+      if(s.token&&s.refresh){BIZ_SLUG=s.slug;BIZ_NAME=s.name;setAuthToken(s.token);await startAuthSession(s.token,s.refresh);enterApp(BIZ_NAME);return;}
     }catch{}
   }
   const slug=new URLSearchParams(location.search).get('c')||'jose-acosta';
@@ -1874,7 +1892,8 @@ async function doLogin(){
     // Sin contraseña configurada — acceso directo
     BIZ_SLUG=body.business_slug;BIZ_NAME=body.bot_name||slug;
     setAuthToken(body.token);
-    localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token}));
+    localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token,refresh:body.refresh_token}));
+    await startAuthSession(body.token,body.refresh_token);
     enterApp(BIZ_NAME);
   } else {
     document.getElementById('login-screen').style.display='flex';
