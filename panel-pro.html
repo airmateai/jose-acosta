@@ -1769,26 +1769,22 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
 <script>
 const SB_URL='https://vjofxmfwdybktpwiuanc.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqb2Z4bWZ3ZHlia3Rwd2l1YW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NzU5NDYsImV4cCI6MjA5MDA1MTk0Nn0.ixU-33c0FEkO7F5xjWb3YHkvj_pQuR0gsJETrGA8ZTE';
-let _sb=supabase.createClient(SB_URL,SB_KEY);
-let _sbSrv=_sb; // service_role retirada del cliente por seguridad (fugaba la clave maestra) — funciones que la necesitaban (facturas_compra, storage) quedan pendientes de mover a un endpoint serverless
-function setAuthToken(token){
-  _sb=supabase.createClient(SB_URL,SB_KEY,{global:{headers:{Authorization:'Bearer '+token}}});
-  _sbSrv=_sb;
-}
-// Mantiene la sesión viva renovando el token solo (con el refresh_token) antes
-// de que caduque, para no depender de volver a hacer login cada hora.
-let _authClient=null;
+// Un único cliente para todo (antes había dos clientes de Supabase en paralelo,
+// cada uno con sus propios temporizadores de renovación de sesión, y se creaba
+// un cliente nuevo cada vez que el token se renovaba sin cerrar el anterior —
+// con el tiempo eso iba acumulando recursos. Ahora _sb.auth gestiona la sesión
+// (refresh automático) y _sb.from() usa el token vigente solo.
+const _sb=supabase.createClient(SB_URL,SB_KEY);
+const _sbSrv=_sb; // service_role retirada del cliente por seguridad (fugaba la clave maestra) — funciones que la necesitaban (facturas_compra, storage) quedan pendientes de mover a un endpoint serverless
 async function startAuthSession(access_token,refresh_token){
-  _authClient=supabase.createClient(SB_URL,SB_KEY);
-  await _authClient.auth.setSession({access_token,refresh_token});
-  _authClient.auth.onAuthStateChange((event,session)=>{
+  await _sb.auth.setSession({access_token,refresh_token});
+  _sb.auth.onAuthStateChange((event,session)=>{
     if(session){
       try{
         const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'{}');
         saved.token=session.access_token;saved.refresh=session.refresh_token;
         localStorage.setItem(SESSION_KEY,JSON.stringify(saved));
       }catch(e){}
-      setAuthToken(session.access_token);
     }
   });
 }
@@ -1871,7 +1867,6 @@ async function doLogin(){
   const body=await panelLogin(slugInput,pass);
   if(body.error){errEl.textContent=body.error;errEl.style.display='block';btn.disabled=false;btn.textContent='Acceder al panel';return;}
   BIZ_SLUG=body.business_slug;BIZ_NAME=body.bot_name||slugInput;
-  setAuthToken(body.token);
   localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token,refresh:body.refresh_token}));
   await startAuthSession(body.token,body.refresh_token);
   enterApp(BIZ_NAME);
@@ -1883,7 +1878,7 @@ async function doLogin(){
   if(saved){
     try{
       const s=JSON.parse(saved);
-      if(s.token&&s.refresh){BIZ_SLUG=s.slug;BIZ_NAME=s.name;setAuthToken(s.token);await startAuthSession(s.token,s.refresh);enterApp(BIZ_NAME);return;}
+      if(s.token&&s.refresh){BIZ_SLUG=s.slug;BIZ_NAME=s.name;await startAuthSession(s.token,s.refresh);enterApp(BIZ_NAME);return;}
     }catch{}
   }
   const slug=new URLSearchParams(location.search).get('c')||'jose-acosta';
@@ -1891,7 +1886,6 @@ async function doLogin(){
   if(!body.error){
     // Sin contraseña configurada — acceso directo
     BIZ_SLUG=body.business_slug;BIZ_NAME=body.bot_name||slug;
-    setAuthToken(body.token);
     localStorage.setItem(SESSION_KEY,JSON.stringify({slug:BIZ_SLUG,name:BIZ_NAME,token:body.token,refresh:body.refresh_token}));
     await startAuthSession(body.token,body.refresh_token);
     enterApp(BIZ_NAME);
