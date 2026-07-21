@@ -797,7 +797,7 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
       <p class="login-box-sub">Introduce tus credenciales para acceder</p>
       <div class="field-group">
         <label class="field-label">Slug del negocio</label>
-        <input class="field-input" type="text" id="login-email" placeholder="jose-acosta" value="jose-acosta" onkeydown="if(event.key==='Enter')doLogin()">
+        <input class="field-input" type="text" id="login-email" name="business-slug" autocomplete="off" placeholder="jose-acosta" value="jose-acosta" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div class="field-group">
         <label class="field-label">Contraseña</label>
@@ -2152,7 +2152,10 @@ function renderCitasCalendar(){
     const day=new Date(start);day.setDate(day.getDate()+d);
     const dayStr=localDateStr(day);
     const isToday=dayStr===localDateStr(new Date());
-    html+=`<div class="day-col"><div class="day-hd ${isToday?'today-hd':''}">${day.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})}</div><div class="grid-body">`;
+    const bodasDia=(_allEncargos||[]).filter(o=>o.evento?.fecha_evento===dayStr);
+    html+=`<div class="day-col"><div class="day-hd ${isToday?'today-hd':''}">${day.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})}</div>`+
+      bodasDia.map(o=>`<div style="font-size:10px;background:#fef3c7;color:#92400e;font-weight:700;padding:3px 6px;border-radius:5px;margin:2px 4px;cursor:pointer" title="${esc(o.evento.lugar||'')}" onclick="crmEditEncargo('${o.id}')">💍 ${esc(o.client_name||o.title)}${o.evento.lugar?' · '+esc(o.evento.lugar):''}</div>`).join('')+
+      `<div class="grid-body">`;
     html+=hours.map((h)=>`<div class="grid-row" onclick="openNuevaCitaModalFechaHora('${dayStr}','${String(h).padStart(2,'0')}:00')"></div>`).join('');
     const dayCitas=allCitas.filter(c=>apptLocalDate(c.starts_at)===dayStr&&c.status!=='cancelled');
     dayCitas.forEach(c=>{
@@ -2183,7 +2186,9 @@ function renderCitasMonth(){
     const date=new Date(y,m,d);
     const ds=localDateStr(date);
     const dayCitas=allCitas.filter(c=>apptLocalDate(c.starts_at)===ds&&c.status!=='cancelled');
+    const bodasDia=(_allEncargos||[]).filter(o=>o.evento?.fecha_evento===ds);
     html+=`<div class="month-cell ${ds===today?'today-cell':''}" onclick="openNuevaCitaModalFecha('${ds}')"><div class="month-num">${d}</div>
+      ${bodasDia.map(o=>`<div class="month-appt-pill" title="${esc(o.evento.lugar||'')}" style="background:#fef3c7;color:#92400e;font-weight:700" onclick="event.stopPropagation();crmEditEncargo('${o.id}')">💍 ${esc(o.client_name||o.title)}${o.evento.lugar?' · '+esc(o.evento.lugar):''}</div>`).join('')}
       ${dayCitas.slice(0,3).map(c=>`<div class="month-appt-pill" style="background:${svcColor(c.service)}22;color:${svcColor(c.service)}" onclick="event.stopPropagation();openCitaModal('${c.id}')">${esc(c.client_name)}</div>`).join('')}
       ${dayCitas.length>3?`<div style="font-size:10px;color:var(--txt3)">+${dayCitas.length-3} más</div>`:''}
     </div>`;
@@ -2589,7 +2594,7 @@ async function crmVerCliente(id){
   const c=_crmClientes.find(x=>x.id===id);if(!c)return;
   const m=c.measurements||{};
   const [ords,facts]=await Promise.all([
-    _sb.from('crm_orders').select('id,title,status,price').eq('business_slug',BIZ_SLUG).eq('client_id',id).order('created_at',{ascending:false}),
+    _sb.from('crm_orders').select('id,title,status,price,materials').eq('business_slug',BIZ_SLUG).eq('client_id',id).order('created_at',{ascending:false}),
     _sb.from('crm_invoices').select('id,invoice_number,type,status,total,issue_date').eq('business_slug',BIZ_SLUG).eq('client_id',id).order('issue_date',{ascending:false})
   ]);
   const medKeys={talla:'Talla',pecho:'Pecho',cintura:'Cintura',cadera:'Cadera',largo_pantalon:'L.Pantalón',largo_chaqueta:'L.Chaqueta'};
@@ -2597,6 +2602,26 @@ async function crmVerCliente(id){
     ?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">`+
       Object.entries(medKeys).filter(([k])=>m[k]).map(([k,label])=>`<div style="text-align:center;padding:8px 12px;background:var(--acc-bg);border:1px solid rgba(184,154,94,.2);border-radius:8px;min-width:72px"><div style="font-size:10px;color:var(--acc);text-transform:uppercase;font-weight:700;margin-bottom:2px">${label}</div><div style="font-weight:800;font-size:15px">${m[k]}${k!=='talla'?'<span style="font-size:10px;color:#94a3b8"> cm</span>':''}</div></div>`).join('')+`</div>`
     :'<p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Sin medidas registradas</p>';
+  // Recordatorio: si han pasado más de 6 meses desde la última toma de medidas,
+  // avisar de que conviene retomarlas antes de un nuevo encargo (la gente cambia físicamente).
+  let medidasAvisoHtml='';
+  if(Object.keys(m).length){
+    const ref=c.medidas_updated_at||c.created_at;
+    if(ref){
+      const meses=(Date.now()-new Date(ref).getTime())/(1000*60*60*24*30);
+      if(meses>=6){
+        medidasAvisoHtml=`<div style="margin-bottom:14px;padding:10px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;font-size:12px;color:#c2410c;font-weight:600">⚠ Medidas de hace ${Math.floor(meses)} meses — conviene retomarlas antes de un nuevo encargo</div>`;
+      }
+    }
+  }
+  const {data:histData}=await _sb.from('crm_medidas_historial').select('measurements,fecha').eq('client_id',id).order('fecha',{ascending:false});
+  const medHistorialHtml=(histData&&histData.length)?`<details style="margin-bottom:20px">
+    <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Historial de medidas anteriores (${histData.length})</summary>
+    <div style="margin-top:8px">${histData.map(h=>`<div style="padding:8px 10px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:12px">
+      <div style="color:#64748b;font-weight:600;margin-bottom:4px">${new Date(h.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'})}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${Object.entries(medKeys).filter(([k])=>h.measurements?.[k]).map(([k,label])=>`<span style="color:#475569">${label}: <b>${h.measurements[k]}</b></span>`).join(' · ')}</div>
+    </div>`).join('')}</div>
+  </details>`:'';
   // Calcular saldo
   const factsArr=facts.data||[];
   const totalFacturado=factsArr.filter(f=>f.type==='factura').reduce((s,f)=>s+Number(f.total||0),0);
@@ -2614,6 +2639,23 @@ async function crmVerCliente(id){
     <div style="background:${saldoPendiente>0?'#fff7ed':'#f8fafc'};border:1px solid ${saldoPendiente>0?'#fed7aa':'#e2e8f0'};border-radius:10px;padding:12px;text-align:center">
       <div style="font-size:10px;color:${saldoPendiente>0?'#ea580c':'#94a3b8'};font-weight:700;text-transform:uppercase;margin-bottom:4px">Pendiente</div>
       <div style="font-size:16px;font-weight:800;color:${saldoPendiente>0?'#ea580c':'#94a3b8'}">${crmFmt(saldoPendiente)}</div>
+    </div>
+  </div>`;
+  // Coste / ganancia / retorno del cliente — materiales usados en sus encargos
+  // (por precio de compra en inventario) + coste de captación manual (Jose lo rellena).
+  const invPrecio={};(_crmInventario||[]).forEach(i=>{invPrecio[i.id]=Number(i.precio_compra||0);});
+  const costeMateriales=(ords.data||[]).reduce((s,o)=>s+(Array.isArray(o.materials)?o.materials.reduce((s2,mt)=>s2+(invPrecio[mt.inv_id]||0)*Number(mt.qty||0),0):0),0);
+  const costeCaptacion=Number(c.coste_captacion||0);
+  const costeTotal=costeMateriales+costeCaptacion;
+  const gananciaNeta=totalFacturado-costeTotal;
+  const retornoPct=costeTotal>0?(gananciaNeta/costeTotal*100):null;
+  const costeHtml=`<div style="margin-bottom:20px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc">
+    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px"> Coste / Ganancia / Retorno</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Materiales</div><div style="font-size:14px;font-weight:800;color:#0a0a0a">${crmFmt(costeMateriales)}</div></div>
+      <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Captación</div><div style="font-size:14px;font-weight:800;color:#0a0a0a">${crmFmt(costeCaptacion)}</div></div>
+      <div style="text-align:center"><div style="font-size:10px;color:${gananciaNeta>=0?'#16a34a':'#dc2626'};font-weight:700;text-transform:uppercase">Ganancia neta</div><div style="font-size:14px;font-weight:800;color:${gananciaNeta>=0?'#16a34a':'#dc2626'}">${crmFmt(gananciaNeta)}</div></div>
+      <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Retorno</div><div style="font-size:14px;font-weight:800;color:#0a0a0a">${retornoPct!=null?retornoPct.toFixed(0)+'%':'—'}</div></div>
     </div>
   </div>`;
   const stColor={presupuesto:'#f59e0b',produccion:'#3b82f6',listo_prueba:'#8b5cf6',ajustes:'#ec4899',listo:'#22c55e',entregado:'#94a3b8'};
@@ -2747,7 +2789,7 @@ async function crmVerCliente(id){
     </div>`+
     siluetaHtml+
     `<div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px"> Medidas detalladas</div>`+
-    medHtml+saldoHtml+walletHtml+visitasHtml+prestamosHtml+timelineHtml+ordsHtml+factsHtml,
+    medidasAvisoHtml+medHtml+medHistorialHtml+saldoHtml+costeHtml+walletHtml+visitasHtml+prestamosHtml+timelineHtml+ordsHtml+factsHtml,
     `<button class="btn btn-ghost" onclick="crmCloseModal()">Cerrar</button>
      <button class="btn btn-ghost" onclick="compartirPortalCliente('${id}','${esc(c.name)}','${esc(c.phone||'')}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Portal cliente</button>
      <button class="btn btn-ghost" onclick="crmCloseModal();crmOpenEncargosModalForClient('${id}','${esc(c.name)}')">+ Nuevo encargo</button>
@@ -2821,6 +2863,11 @@ function crmClienteForm(c={}){
     <div class="crm-form-group"><label class="crm-form-label">Etiquetas (separadas por coma)</label><input class="crm-form-ctrl" id="cf-tags" value="${esc(c.tags||'')}" placeholder="novio, corporativo, vip..."/></div>
     <div class="crm-form-group"><label class="crm-form-label">Fecha de la boda</label><input type="date" class="crm-form-ctrl" id="cf-boda" value="${c.fecha_boda||''}"/></div>
   </div>
+  <div class="crm-form-group">
+    <label class="crm-form-label">Coste de captación (€)</label>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:4px">Cuánto costó conseguir a este cliente (publicidad, comisión, regalo...)</div>
+    <input type="number" class="crm-form-ctrl" id="cf-coste-captacion" step="0.01" min="0" value="${c.coste_captacion??''}"/>
+  </div>
   <div class="crm-form-row">
     <div class="crm-form-group" style="display:flex;align-items:center;gap:10px;padding-top:8px">
       <input type="checkbox" id="cf-fidelizado" ${(c.tags||'').includes('fidelizado')?'checked':''} style="width:18px;height:18px;accent-color:#c4a35a;cursor:pointer">
@@ -2865,7 +2912,19 @@ async function crmSaveCliente(){
   else{tagsVal=tagsVal.split(',').map(s=>s.trim()).filter(s=>s&&s!=='fidelizado').join(',');}
   const fotosRaw=cv('cf-fotos');
   const fotos=fotosRaw?fotosRaw.split('\n').map(s=>s.trim()).filter(s=>s.startsWith('http')).slice(0,3):[];
-  const payload={business_slug:BIZ_SLUG,name,tipo:cv('cf-tipo')||'particular',empresa:cv('cf-empresa')||null,phone:cv('cf-phone')||null,email:cv('cf-email')||null,nif:cv('cf-nif')||null,iban:cv('cf-iban')||null,direccion:cv('cf-direccion')||null,tags:tagsVal||null,fecha_boda:cv('cf-boda')||null,notes:cv('cf-notes')||null,measurements:Object.keys(m).length?m:null,fotos:fotos.length?fotos:null};
+  const costeCaptVal=cv('cf-coste-captacion');
+  const payload={business_slug:BIZ_SLUG,name,tipo:cv('cf-tipo')||'particular',empresa:cv('cf-empresa')||null,phone:cv('cf-phone')||null,email:cv('cf-email')||null,nif:cv('cf-nif')||null,iban:cv('cf-iban')||null,direccion:cv('cf-direccion')||null,tags:tagsVal||null,fecha_boda:cv('cf-boda')||null,notes:cv('cf-notes')||null,measurements:Object.keys(m).length?m:null,fotos:fotos.length?fotos:null,coste_captacion:costeCaptVal!==''?parseFloat(costeCaptVal):null};
+  // Historial de medidas: si el cliente ya existía y sus medidas cambian, guardamos
+  // una foto de las medidas anteriores antes de sobrescribirlas, y marcamos cuándo
+  // se tomaron las nuevas (para el recordatorio de "volver a tomar medidas").
+  const oldClient=_crmEditId?_crmClientes.find(x=>x.id===_crmEditId):null;
+  const medidasCambiaron=JSON.stringify(oldClient?.measurements||null)!==JSON.stringify(payload.measurements);
+  if(medidasCambiaron&&payload.measurements){
+    payload.medidas_updated_at=new Date().toISOString();
+    if(oldClient?.measurements&&Object.keys(oldClient.measurements).length){
+      _sb.from('crm_medidas_historial').insert({business_slug:BIZ_SLUG,client_id:_crmEditId,measurements:oldClient.measurements,fecha:oldClient.medidas_updated_at||oldClient.created_at||new Date().toISOString()}).then(({error})=>{if(error)console.warn('No se pudo guardar historial de medidas:',error.message);});
+    }
+  }
   // Si aun no se ha ejecutado la migracion de alguna columna nueva (ej. "fotos"), no
   // queremos que se rompa el guardado entero: reintentamos sin ese campo.
   async function guardarConReintento(fn){
@@ -3342,12 +3401,25 @@ function encKcard(o){
     pagoBadge=`<div style="font-size:10px;font-weight:700;color:${color};margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> ${crmFmt(pg.cobrado||0)} / ${crmFmt(pg.total)} (${pct}%)</div>`;
   }
   const eventoStr=o.evento?.fecha_evento?`<div style="font-size:10px;color:#94a3b8;margin-bottom:3px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Evento: ${o.evento.fecha_evento}</div>`:'';
+  // Recordatorio: si lleva >=3 días como "listo para prueba" sin que el cliente tenga
+  // una cita reservada desde entonces, avisar para que se le contacte.
+  let pruebaAvisoStr='';
+  if(o.status==='listo_prueba'){
+    const entradaLog=(o.status_log||[]).slice().reverse().find(s=>s.status==='listo_prueba');
+    const desde=entradaLog?new Date(entradaLog.fecha):(o.updated_at?new Date(o.updated_at):null);
+    if(desde){
+      const dias=Math.floor((Date.now()-desde.getTime())/(1000*60*60*24));
+      const tieneCita=allCitas.some(c=>(c.client_name||'').toLowerCase()===(o.client_name||'').toLowerCase()&&new Date(c.starts_at)>=desde&&c.status!=='cancelled');
+      if(dias>=3&&!tieneCita)pruebaAvisoStr=`<div style="font-size:10px;color:#c2410c;font-weight:700;margin-bottom:3px;background:#fff7ed;border-radius:4px;padding:3px 6px">⚠ Listo para prueba hace ${dias}d — reservar cita</div>`;
+    }
+  }
   return `<div class="crm-kcard" draggable="true" data-id="${o.id}" data-status="${o.status}"
     ondragstart="encDragStart(event,'${o.id}')"
     ondragend="encDragEnd(event)">
     ${thumb}
     <div class="crm-kcard-title">${esc(o.title)}</div>
     <div class="crm-kcard-client"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${esc(o.client_name||'Sin cliente')}</div>
+    ${pruebaAvisoStr}
     ${eventoStr}
     ${medStr}
     ${pagoBadge}
@@ -3356,6 +3428,7 @@ function encKcard(o){
       <button class="btn btn-ghost btn-xs" onclick="crmEditEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
       <button class="btn btn-xs" onclick="openSuitDesigner('${o.id}')">Diseño</button>
       <button class="btn btn-xs" onclick="generarFacturaDesdeEncargo('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg> Factura</button>
+      ${o.price?`<button class="btn btn-xs" onclick="generarFacturas7030('${o.id}')" title="Genera 2 facturas: señal 70% y resto 30%">70/30</button>`:''}
       <button class="btn btn-xs" onclick="imprimirContrato('${o.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M9 2h6a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v0a2 2 0 0 1 2-2z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Contrato</button>
       <button class="btn btn-xs" style="font-weight:700" onclick="imprimirTaller('${o.id}')"> Ajustes</button>
     </div>
@@ -3434,7 +3507,9 @@ async function encDrop(e,col){
   if(!_dragEncId)return;
   const o=_allEncargos.find(x=>x.id===_dragEncId);
   if(o&&o.status!==col){
-    await _sb.from('crm_orders').update({status:col,updated_at:new Date().toISOString()}).eq('id',_dragEncId);
+    const statusLog=[...(o.status_log||[]),{status:col,fecha:new Date().toISOString()}];
+    await _sb.from('crm_orders').update({status:col,updated_at:new Date().toISOString(),status_log:statusLog}).eq('id',_dragEncId);
+    o.status_log=statusLog;
     showToast('Estado actualizado');
     if(col==='entregado'){if(typeof fireConfetti==='function')fireConfetti(100);if(typeof soundSuccess==='function')soundSuccess();}
     else if(typeof soundSew==='function')soundSew();
@@ -3450,7 +3525,7 @@ const _ENC_NOTIFY_STATES={
   listo:{subject:'¡Tu traje está listo para recoger! ',msg:'Tu traje a medida ya está terminado y listo para que lo recojas. Estamos deseando que lo veas. ¡Te esperamos!'},
   entregado:{subject:'Gracias por confiar en nosotros',msg:'Ha sido un placer confeccionar tu traje. Si necesitas cualquier ajuste futuro, no dudes en contactarnos.'}
 };
-async function _encNotificarCliente(o,col){
+async function _encNotificarCliente(o,col,fotoUrl=null){
   const tpl=_ENC_NOTIFY_STATES[col];if(!tpl)return;
   // Buscar email del cliente
   const client=_crmClientes.find(x=>x.id===o.client_id);
@@ -3465,9 +3540,14 @@ async function _encNotificarCliente(o,col){
     servicio:tpl.subject,
     duracion:'',precio:'',fecha:'',hora:'',
     reply_to:biz.email||'airmateai@gmail.com',
-    notes:tpl.msg
+    notes:tpl.msg+(fotoUrl?`\n\nFoto: ${fotoUrl}`:'')
   })
-  .then(()=>showToast(' Cliente notificado automáticamente'))
+  .then(async()=>{
+    showToast(' Cliente notificado automáticamente');
+    const emailLog=[...(o.email_log||[]),{tipo:col,email,fecha:new Date().toISOString(),foto:fotoUrl||null}];
+    o.email_log=emailLog;
+    await _sb.from('crm_orders').update({email_log:emailLog}).eq('id',o.id);
+  })
   .catch(()=>{});
 }
 async function crmEncargosOpts(sel=null){
@@ -3644,7 +3724,18 @@ async function _buildEncBody(o={}){
       <div style="font-size:12px;color:#64748b;margin-bottom:8px">Añade URLs de fotos de tejidos, referencias o pruebas (una por línea).</div>
       <textarea class="crm-form-ctrl" id="ef-fotos" rows="3" placeholder="https://...">${(o.fotos||[]).join('\n')}</textarea>
       <div id="ef-fotos-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${(o.fotos||[]).map(url=>`<img src="${esc(url)}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0" onerror="this.style.display='none'"/>`).join('')}</div>
-    </div>`;
+    </div>
+
+    ${o.id?`<div style="border-top:1px solid #f1f5f9;padding-top:12px;margin-top:14px;display:flex;gap:16px;flex-wrap:wrap">
+      <details style="flex:1;min-width:200px">
+        <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Historial de estados (${(o.status_log||[]).length})</summary>
+        <div style="margin-top:8px">${(o.status_log||[]).slice().reverse().map(s=>`<div style="font-size:12px;padding:4px 0;border-bottom:1px dotted #e2e8f0"><b>${stLabels[s.status]||s.status}</b> — ${new Date(s.fecha).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`).join('')||'<div style="font-size:12px;color:#94a3b8">Sin historial</div>'}</div>
+      </details>
+      <details style="flex:1;min-width:200px">
+        <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">Emails enviados (${(o.email_log||[]).length})</summary>
+        <div style="margin-top:8px">${(o.email_log||[]).slice().reverse().map(e=>`<div style="font-size:12px;padding:4px 0;border-bottom:1px dotted #e2e8f0">${stLabels[e.tipo]||e.tipo} → ${esc(e.email)} — ${new Date(e.fecha).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${e.foto?' 📷':''}</div>`).join('')||'<div style="font-size:12px;color:#94a3b8">Sin emails registrados</div>'}</div>
+      </details>
+    </div>`:''}`;
 }
 
 async function crmOpenEncargosModal(){
@@ -3658,9 +3749,17 @@ async function crmEditEncargo(id){
   _crmEditId=id;
   _encMatsList=Array.isArray(o.materials)?o.materials.map(m=>({...m})):[];
   const body=await _buildEncBody(o);
-  crmOpenModal('Editar encargo',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveEncargo()">Guardar</button>`);
+  const client=o.client_id?_crmClientes.find(x=>x.id===o.client_id):null;
+  const tieneEmail=client?.email||o.client_email;
+  crmOpenModal('Editar encargo',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button>
+    ${tieneEmail?`<button class="btn btn-ghost" onclick="encEnviarListoConFoto('${id}')">✉ Enviar "listo" con foto</button>`:''}
+    <button class="btn btn-accent" onclick="crmSaveEncargo()">Guardar</button>`);
   encRenderMats();
   if(o.client_id)encCargarMedidas(o.client_id);
+}
+async function encEnviarListoConFoto(id){
+  const o=_allEncargos.find(x=>x.id===id);if(!o)return;
+  await _encNotificarCliente(o,'listo',(o.fotos&&o.fotos[0])||null);
 }
 
 let _savingEncargo=false;
@@ -3712,7 +3811,10 @@ async function crmSaveEncargo(){
   }
   const fotosRaw=cv('ef-fotos');
   const fotos=fotosRaw?fotosRaw.split('\n').map(s=>s.trim()).filter(s=>s.startsWith('http')):[];
-  const payload={business_slug:BIZ_SLUG,title,client_id:cId,client_name:cName,status:cv('ef-status'),
+  const nuevoStatus=cv('ef-status');
+  const oOld=_crmEditId?_allEncargos.find(x=>x.id===_crmEditId):null;
+  const statusCambio=oOld&&oOld.status!==nuevoStatus;
+  const payload={business_slug:BIZ_SLUG,title,client_id:cId,client_name:cName,status:nuevoStatus,
     price:precio,description:cv('ef-desc')||null,
     measurements:Object.keys(m).length?m:null,
     evento:Object.keys(evento).length?evento:null,
@@ -3721,9 +3823,11 @@ async function crmSaveEncargo(){
     materials:validMats.length?validMats:null,
     fotos:fotos.length?fotos:null,
     notes:cv('ef-notes')||null,updated_at:new Date().toISOString()};
+  if(statusCambio)payload.status_log=[...(oOld.status_log||[]),{status:nuevoStatus,fecha:new Date().toISOString()}];
   const esNuevo=!_crmEditId;
   if(_crmEditId)await _sb.from('crm_orders').update(payload).eq('id',_crmEditId);
   else await _sb.from('crm_orders').insert(payload);
+  if(statusCambio){const oParaEmail={...oOld,...payload,id:_crmEditId};await _encNotificarCliente(oParaEmail,nuevoStatus,nuevoStatus==='listo'?(fotos[0]||null):null);}
   // Email automático de estado de pago al cliente
   if(Object.keys(pago).length&&precio){
     const client=_crmClientes.find(x=>x.id===cId);
@@ -3756,6 +3860,20 @@ async function crmSaveEncargo(){
   }finally{_savingEncargo=false;}
 }
 
+async function generarFacturas7030(id){
+  const o=_allEncargos.find(x=>x.id===id);if(!o)return;
+  if(!o.price){showToast('El encargo no tiene precio definido');return;}
+  if(!confirm(`Se van a crear 2 documentos de factura para "${o.title}":\n• Señal 70% — ${crmFmt(o.price*0.7)}\n• Resto 30% — ${crmFmt(o.price*0.3)}\n\n¿Continuar?`))return;
+  const grupo=crypto.randomUUID();
+  const senal=Math.round(o.price*0.7*100)/100;
+  const resto=Math.round((o.price-senal)*100)/100;
+  const base={business_slug:BIZ_SLUG,client_id:o.client_id,client_name:o.client_name,type:'factura',status:'borrador',issue_date:new Date().toISOString().split('T')[0],grupo_pago:grupo};
+  const {error:e1}=await _sb.from('crm_invoices').insert({...base,tipo_pago:'senal_70',total:senal,items:[{desc:`Señal 70% — ${o.title}`,qty:1,price:senal}]});
+  const {error:e2}=await _sb.from('crm_invoices').insert({...base,tipo_pago:'resto_30',total:resto,items:[{desc:`Resto 30% — ${o.title}`,qty:1,price:resto}]});
+  if(e1||e2){showToast('⚠ Error al generar las facturas: '+(e1?.message||e2?.message));return;}
+  showToast('Facturas 70/30 creadas en Facturación');
+  showTab('crm-facturacion',document.getElementById('nav-crm-facturacion'));
+}
 async function generarFacturaDesdeEncargo(id){
   const {data:o}=await _sb.from('crm_orders').select('*').eq('id',id).single();if(!o)return;
   const items=o.price?[{desc:o.title,qty:1,price:o.price}]:[{desc:o.title,qty:1,price:0}];
@@ -3766,6 +3884,7 @@ async function generarFacturaDesdeEncargo(id){
 }
 
 // ── CRM INVENTARIO ─────────────────────────────────────────────────────────
+let _invSugerencias={};
 async function crmLoadInventario(){
   const {data}=await _sb.from('crm_inventory').select('*').eq('business_slug',BIZ_SLUG).order('name');
   _crmInventario=data||[];
@@ -3773,11 +3892,21 @@ async function crmLoadInventario(){
   const al=document.getElementById('crm-stock-alert');
   if(low.length){al.style.display='flex';al.innerHTML='️ Stock bajo en: '+low.map(i=>'<strong>'+esc(i.name)+'</strong>').join(', ')+' <button class="btn btn-accent btn-xs" style="margin-left:8px" onclick="crmAbrirSolicitarPedido()">Solicitar pedido</button>';}
   else al.style.display='none';
+  // Sugerencia de stock mínimo según ventas/salidas de los últimos 3 meses.
+  _invSugerencias={};
+  if(_crmInventario.length){
+    const desde=new Date();desde.setMonth(desde.getMonth()-3);
+    const {data:movs}=await _sb.from('crm_inventory_movements').select('inventory_id,tipo,cantidad,created_at').eq('business_slug',BIZ_SLUG).gte('created_at',desde.toISOString());
+    (movs||[]).filter(m=>m.tipo==='salida').forEach(m=>{_invSugerencias[m.inventory_id]=(_invSugerencias[m.inventory_id]||0)+Number(m.cantidad||0);});
+    Object.keys(_invSugerencias).forEach(id=>{_invSugerencias[id]=Math.ceil((_invSugerencias[id]/3)*1.2);});
+  }
   const tb=document.getElementById('crm-inventario-tbody');
   if(!_crmInventario.length){tb.innerHTML='<tr><td colspan="9" class="empty-state">Sin materiales registrados</td></tr>';return;}
   tb.innerHTML=_crmInventario.map(i=>{
     const isLow=i.min_stock!==null&&i.stock<=i.min_stock;
     const pc=i.precio_compra!=null?crmFmt(i.precio_compra):'—';
+    const sugerido=_invSugerencias[i.id]||0;
+    const sugerenciaSubir=sugerido>0&&sugerido>(i.min_stock||0);
     const imgCell=i.image_url
       ?`<td><img src="${esc(i.image_url)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0;display:block" onerror="this.style.display='none'"/></td>`
       :`<td style="text-align:center;color:#cbd5e1;font-size:18px">—</td>`;
@@ -3785,7 +3914,7 @@ async function crmLoadInventario(){
       ${imgCell}
       <td><strong>${esc(i.name)}</strong></td><td>${esc(i.category||'—')}</td>
       <td class="${isLow?'stock-low':'stock-ok'}">${i.stock} ${esc(i.unit||'')}</td>
-      <td>${i.min_stock!==null?i.min_stock:'—'}</td><td>${esc(i.unit||'ud')}</td>
+      <td>${i.min_stock!==null?i.min_stock:'—'}${sugerenciaSubir?`<div style="font-size:10px;color:#b45309;font-weight:700;margin-top:2px">↑ sugerido: ${sugerido} <span style="cursor:pointer;text-decoration:underline" onclick="crmAplicarSugerenciaStock('${i.id}',${sugerido})">aplicar</span></div>`:''}</td><td>${esc(i.unit||'ud')}</td>
       <td>${pc}</td>
       <td>${isLow?`<span class="tag tag-hot" style="cursor:pointer" onclick="crmAbrirSolicitarPedido('${i.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Bajo</span>`:'<span class="tag tag-confirmed">OK</span>'}</td>
       <td style="display:flex;gap:4px;flex-wrap:wrap">
@@ -3797,6 +3926,11 @@ async function crmLoadInventario(){
         <button class="btn btn-danger btn-xs" onclick="crmDeleteInventario('${i.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
       </td>
     </tr>`;}).join('');
+}
+async function crmAplicarSugerenciaStock(id,valor){
+  await _sb.from('crm_inventory').update({min_stock:valor}).eq('id',id);
+  showToast('Stock mínimo actualizado a '+valor);
+  crmLoadInventario();
 }
 function crmInvForm(i={}){return `
   <div class="crm-form-row">
@@ -4842,6 +4976,10 @@ function openBizSettings(){
 async function saveBizSettings(){
   const cur=getBizInfo(); const b=Object.assign({},cur,{name:cv('biz-name'),address:cv('biz-addr'),phone:cv('biz-tel'),cif:cv('biz-cif'),email:cv('biz-email'),iva_pct:parseInt(cv('biz-iva'))||0,iban:cv('biz-iban')||cur.iban||null,payment_terms:cv('biz-payment-terms')||null,holded_key:cv('biz-holded')||null,verifactu_key:cv('biz-verifactu')||null});
   localStorage.setItem('biz_info_'+BIZ_SLUG,JSON.stringify(b));
+  // Guardamos también en Supabase (solo legible por service_role desde las
+  // funciones serverless) para que el IBAN esté disponible en el enlace de
+  // pago público, sin depender del navegador de Jose.
+  _sb.from('bot_configs').update({biz_info:b}).eq('slug',BIZ_SLUG).then(({error})=>{if(error)console.warn('No se pudo sincronizar biz_info:',error.message);});
   // Cambio de contraseña
   const np=cv('biz-newpass'),np2=cv('biz-newpass2');
   if(np){
@@ -4951,6 +5089,11 @@ async function _doEnviarEmailDoc(id){
   const lineas=(f.lines||[]).map(l=>`• ${l.desc} × ${l.qty} — ${crmFmt(l.price*l.qty)}`).join('\n')||'Consulte el documento para ver el detalle.';
   const biz=getBizInfo();
   const subject=`${tipDoc} ${num} — ${biz.name||'Jose Acosta Style'}`;
+  // Si es una factura pendiente de pago, añadimos el enlace de pago por transferencia
+  // (comprobante) — mismo patrón que usamos con Costa Norte.
+  const enlacePago=(f.type==='factura'&&f.status!=='pagado'&&f.payment_token)
+    ?`\n\nPara realizar el pago por transferencia y subir tu comprobante, entra aquí:\nhttps://airmate.es/jose-acosta-pago.html?token=${f.payment_token}`
+    :'';
   emailjs.send('service_npmjvvf','template_6arpdfi',{
     cliente_nombre: f.client_name||'Cliente',
     cliente_email: toEmail,
@@ -4962,7 +5105,7 @@ async function _doEnviarEmailDoc(id){
     fecha: fecha,
     hora: '',
     reply_to: biz.email||'airmateai@gmail.com',
-    notes: lineas
+    notes: lineas+enlacePago
   })
   .then(()=>{showToast(' Email enviado a '+toEmail);crmCloseModal();})
   .catch(e=>{showToast('Error al enviar:'+JSON.stringify(e));});
