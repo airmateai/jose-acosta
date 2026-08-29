@@ -6404,6 +6404,7 @@ async function tpvCobrar() {
     var p=TPV_PRODUCTOS.find(function(x){return x.id===c.id;});
     if(p){ p.stock=Math.max(0,p.stock-c.qty); }
     await _sb.from('crm_inventory').update({stock:Math.max(0,(p?.stock||0))}).eq('id',c.id);
+    await _sb.from('crm_inventory_movements').insert({business_slug:BIZ_SLUG,inventory_id:c.id,tipo:'salida',cantidad:c.qty,motivo:`Venta TPV · ref ${venta.id.slice(0,8).toUpperCase()}`});
   }
 
   var nueva={id:venta.id.slice(0,8).toUpperCase(),
@@ -8194,6 +8195,7 @@ async function _iaExecTool(name, args){
         const nuevo=(parseFloat(inv.stock)||0)+(parseFloat(args.cantidad)||0);
         const {error}=await _sb.from('crm_inventory').update({stock:nuevo}).eq('id',args.producto_id);
         if(error)return {ok:false,error:error.message};
+        await _sb.from('crm_inventory_movements').insert({business_slug:BIZ_SLUG,inventory_id:args.producto_id,tipo:(parseFloat(args.cantidad)||0)>=0?'entrada':'salida',cantidad:Math.abs(parseFloat(args.cantidad)||0),motivo:args.motivo||'Ajuste por IA'});
         if(typeof crmLoadInventario==='function')crmLoadInventario();
         return {ok:true,producto_id:args.producto_id,stock_anterior:inv.stock,stock_nuevo:nuevo};
       }
