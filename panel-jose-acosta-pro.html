@@ -3859,12 +3859,12 @@ function crmRenderFacturasTable(){
   const year=new Date().getFullYear();
   tb.innerHTML=list.map((f,i)=>{
     const sb2={borrador:'tag-cold',enviado:'tag-completed',pagado:'tag-confirmed',cancelado:'tag-cancelled'}[f.status]||'tag-cold';
-    const tb2=f.type==='factura'?'tag-purple':'tag-pending';
+    const tb2=f.type==='factura'?'tag-purple':(f.type==='ticket'?'tag-confirmed':'tag-pending');
     const num=f.invoice_number||(f.type==='factura'?`FAC-${year}-${String(i+1).padStart(3,'0')}`:`PRE-${year}-${String(i+1).padStart(3,'0')}`);
     return `<tr>
       <td><strong>${num}</strong></td>
       <td>${esc(f.client_name||'—')}</td>
-      <td><span class="tag ${tb2}">${f.type==='factura'?'Factura':'Presupuesto'}</span></td>
+      <td><span class="tag ${tb2}">${f.type==='factura'?'Factura':(f.type==='ticket'?'Ticket TPV':'Presupuesto')}</span></td>
       <td><span class="tag ${sb2}">${f.status}</span></td>
       <td><strong>${f.total!=null?crmFmt(f.total):'—'}</strong></td>
       <td>${f.issue_date?new Date(f.issue_date).toLocaleDateString('es-ES'):'—'}</td>
@@ -3905,7 +3905,7 @@ function _crmRenderOldTable(){
   const year=new Date().getFullYear();
   tb.innerHTML=_crmFacturas.map((f,i)=>{
     const sb2={borrador:'tag-cold',enviado:'tag-completed',pagado:'tag-confirmed',cancelado:'tag-cancelled'}[f.status]||'tag-cold';
-    const tb2=f.type==='factura'?'tag-purple':'tag-pending';
+    const tb2=f.type==='factura'?'tag-purple':(f.type==='ticket'?'tag-confirmed':'tag-pending');
     const num=f.invoice_number||(f.type==='factura'?`FAC-${year}-${String(i+1).padStart(3,'0')}`:`PRE-${year}-${String(i+1).padStart(3,'0')}`);
     return `<tr>
       <td><strong>${num}</strong></td>
