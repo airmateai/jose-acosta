@@ -851,6 +851,10 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93M12 20v-2M12 6V4"/></svg>
             <span>Stock / Inventario</span>
           </button>
+          <button class="nav-item" id="nav-punteo" onclick="showTab('punteo',this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            <span>Recepción de Stock</span>
+          </button>
           <button class="nav-item" id="nav-crm-facturacion" onclick="showTab('crm-facturacion',this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             <span>Facturación</span>
@@ -987,6 +991,7 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
         <div id="pane-citas" class="tab-pane">
           <div class="page-hd page-hd-row">
             <div><div class="page-title">Citas</div><div class="page-sub">Agenda del agente IA</div></div>
+            <button class="btn btn-ghost" onclick="openBloqueoModal()" style="border-color:rgba(196,163,90,.4);color:#c4a35a">Bloquear días</button>
             <button class="btn btn-accent" onclick="openNuevaCitaModal()">+ Nueva cita</button>
           </div>
           <div class="card">
@@ -1144,7 +1149,10 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
         <div id="pane-crm-stock" class="tab-pane">
           <div class="page-hd page-hd-row">
             <div><div class="page-title">Stock / Inventario</div><div class="page-sub">Inventario de materiales</div></div>
-            <button class="btn btn-accent" onclick="crmOpenInventarioModal()">+ Añadir material</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost" id="holded-sync-stock-btn" onclick="holdedSyncStock()">⟳ Sync Holded</button>
+              <button class="btn btn-accent" onclick="crmOpenInventarioModal()">+ Añadir material</button>
+            </div>
           </div>
           <div id="crm-stock-alert" class="alert alert-red" style="display:none"></div>
           <div class="card"><div class="table-wrap">
@@ -1152,6 +1160,101 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
             <tbody id="crm-inventario-tbody"><tr><td colspan="9" style="text-align:center;padding:40px"><div class="spinner"></div></td></tr></tbody>
             </table>
           </div></div>
+        </div>
+
+        <!-- RECEPCIÓN DE STOCK / PUNTEO -->
+        <div id="pane-punteo" class="tab-pane">
+          <div class="page-hd page-hd-row">
+            <div><div class="page-title">Recepción de Stock</div><div class="page-sub">Punteo de albaranes y actualización automática de inventario</div></div>
+            <button class="btn btn-accent" onclick="punteoNuevo()">+ Nueva recepción</button>
+          </div>
+
+          <!-- ESTADO: INICIO -->
+          <div id="punteo-inicio">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+              <!-- Subir albarán -->
+              <div class="card" style="padding:28px;text-align:center;cursor:pointer;border:2px dashed var(--border);transition:all .2s;" id="punteo-drop-zone" onclick="document.getElementById('punteo-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='#c4a35a'" ondragleave="this.style.borderColor=''" ondrop="punteoDrop(event)">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c4a35a" stroke-width="1.5" style="margin-bottom:12px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px;">Foto del albarán</div>
+                <div style="font-size:12px;color:var(--txt3);">Arrastra o haz clic para subir.<br>La IA leerá los productos automáticamente.</div>
+                <input type="file" id="punteo-file-input" accept="image/*" style="display:none" onchange="punteoReadFile(this.files[0])">
+              </div>
+              <!-- O manual -->
+              <div class="card" style="padding:28px;text-align:center;cursor:pointer;transition:all .2s;" onclick="punteoManual()">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8a7960" stroke-width="1.5" style="margin-bottom:12px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px;">Entrada manual</div>
+                <div style="font-size:12px;color:var(--txt3);">Busca productos del catálogo<br>y añade las cantidades a mano.</div>
+              </div>
+            </div>
+
+            <!-- Recepciones anteriores -->
+            <div class="card">
+              <div style="padding:16px 20px;border-bottom:1px solid var(--border2);font-size:13px;font-weight:600;color:var(--txt);">Últimas recepciones</div>
+              <div id="punteo-historial-tbody" style="padding:0;">
+                <div style="text-align:center;padding:40px;color:var(--txt3);font-size:13px;">Cargando historial...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ESTADO: PROCESANDO FOTO -->
+          <div id="punteo-procesando" style="display:none;">
+            <div class="card" style="padding:40px;text-align:center;">
+              <div class="spinner" style="margin:0 auto 16px;width:32px;height:32px;border-width:3px;border-color:var(--border);border-top-color:#c4a35a;"></div>
+              <div style="font-size:14px;font-weight:600;color:var(--txt);margin-bottom:4px;">Leyendo el albarán...</div>
+              <div style="font-size:12px;color:var(--txt3);">La IA está extrayendo los productos y cantidades.</div>
+            </div>
+          </div>
+
+          <!-- ESTADO: PUNTEO ACTIVO -->
+          <div id="punteo-activo" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;">
+              <!-- Lista de punteo -->
+              <div>
+                <div class="card" style="margin-bottom:16px;">
+                  <div style="padding:14px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:13px;font-weight:600;color:var(--txt);">Productos a puntear</span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <span id="punteo-counter" style="font-size:12px;color:var(--txt3);"></span>
+                      <button class="btn btn-ghost" onclick="punteoAddLine()" style="font-size:11px;padding:5px 10px;">+ Línea</button>
+                    </div>
+                  </div>
+                  <div style="padding:0;" id="punteo-lines"></div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                  <button class="btn btn-ghost" onclick="punteoReset()">Cancelar</button>
+                  <button class="btn btn-accent" onclick="punteoConfirmar()" id="punteo-confirm-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg>
+                    Confirmar recepción
+                  </button>
+                </div>
+              </div>
+
+              <!-- Panel derecho: foto + resumen -->
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="card" style="padding:16px;" id="punteo-foto-panel">
+                  <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Albarán</div>
+                  <img id="punteo-preview-img" src="" alt="Albarán" style="width:100%;border-radius:8px;object-fit:contain;max-height:320px;display:none;">
+                  <div id="punteo-no-foto" style="font-size:12px;color:var(--txt3);text-align:center;padding:20px 0;">Entrada manual — sin imagen</div>
+                </div>
+                <div class="card" style="padding:16px;" id="punteo-resumen-panel">
+                  <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Resumen</div>
+                  <div id="punteo-resumen-body" style="font-size:13px;color:var(--txt3);">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ESTADO: ÉXITO -->
+          <div id="punteo-exito" style="display:none;">
+            <div class="card" style="padding:48px;text-align:center;">
+              <div style="width:64px;height:64px;background:#dcfce7;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div style="font-size:18px;font-weight:700;color:var(--txt);margin-bottom:6px;">Stock actualizado</div>
+              <div style="font-size:13px;color:var(--txt3);margin-bottom:20px;" id="punteo-exito-msg"></div>
+              <button class="btn btn-accent" onclick="punteoReset()">Nueva recepción</button>
+            </div>
+          </div>
         </div>
 
         <!-- CRM: FACTURACIÓN -->
@@ -1740,9 +1843,14 @@ textarea.crm-form-ctrl{resize:vertical;min-height:70px;}
 <script>
 const SB_URL='https://vjofxmfwdybktpwiuanc.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqb2Z4bWZ3ZHlia3Rwd2l1YW5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NzU5NDYsImV4cCI6MjA5MDA1MTk0Nn0.ixU-33c0FEkO7F5xjWb3YHkvj_pQuR0gsJETrGA8ZTE';
-const SB_SRV='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqb2Z4bWZ3ZHlia3Rwd2l1YW5jIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDQ3NTk0NiwiZXhwIjoyMDkwMDUxOTQ2fQ.08g-CtdJ0BvgE3U4v9JppA_114EN24KBs7iBpUaw9cs';
-const _sb=supabase.createClient(SB_URL,SB_KEY);
-const _sbSrv=supabase.createClient(SB_URL,SB_SRV);
+// persistSession:false — sin esto, si en el mismo navegador se ha entrado antes a
+// OTRO panel de Airmate que sí usa sesiones reales (Costa Norte, Stradale...), este
+// panel hereda esa sesión de otro negocio desde el localStorage compartido (mismo
+// proyecto Supabase = misma clave de storage) y las consultas fallan con "0 rows"
+// porque el rol pasa de anon a authenticated de otro negocio. Este panel no usa
+// autenticación real, solo la clave anon, así que no necesita persistir sesión.
+const _sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const _sbSrv=_sb; // service_role retirada del cliente por seguridad (fugaba la clave maestra) — funciones que la necesitaban quedan pendientes de mover a un endpoint serverless
 
 let BIZ_SLUG='',BIZ_NAME='';
 let allCitas=[],allLeads=[];
@@ -1779,7 +1887,6 @@ function enterApp(name){
     }catch(e){}
   }
   loadAll();
-  setInterval(loadAll,30000);
   startRealtime();
   // Restaurar pestaña activa
   const savedTab=localStorage.getItem('tab_'+BIZ_SLUG)||'dashboard';
@@ -2073,6 +2180,14 @@ function renderCitasCalendar(){
     html+=`<div class="day-col"><div class="day-hd ${isToday?'today-hd':''}">${day.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})}</div><div class="grid-body">`;
     html+=hours.map((h)=>`<div class="grid-row" onclick="openNuevaCitaModalFechaHora('${dayStr}','${String(h).padStart(2,'0')}:00')"></div>`).join('');
     const dayCitas=allCitas.filter(c=>apptLocalDate(c.starts_at)===dayStr&&c.status!=='cancelled');
+    const isBlocked=dayCitas.some(c=>c.status==='blocked');
+    if(isBlocked){
+      const blk=dayCitas.find(c=>c.status==='blocked');
+      html+=`<div style="position:absolute;inset:0;background:repeating-linear-gradient(-45deg,rgba(148,163,184,.07) 0,rgba(148,163,184,.07) 4px,transparent 4px,transparent 10px);pointer-events:none;z-index:1"></div>`;
+      html+=`<div class="appt-block" style="top:0;height:100%;background:#94a3b822;border-left-color:#94a3b8;z-index:2" onclick="openCitaModal('${blk.id}')">
+        <div class="appt-name" style="color:#94a3b8">🔒 ${esc(blk.service)}</div>
+      </div>`;
+    } else {
     dayCitas.forEach(c=>{
       const dt=new Date(c.starts_at);
       const top=(dt.getHours()*60+dt.getMinutes())*60/60;
@@ -2083,6 +2198,7 @@ function renderCitasCalendar(){
         <div class="appt-svc">${esc(c.service)}</div>
       </div>`;
     });
+    }
     if(isToday){const now=new Date();html+=`<div class="now-line" style="top:${(now.getHours()*60+now.getMinutes())*60/60}px"></div>`;}
     html+='</div></div>';
   }
@@ -2101,9 +2217,12 @@ function renderCitasMonth(){
     const date=new Date(y,m,d);
     const ds=localDateStr(date);
     const dayCitas=allCitas.filter(c=>apptLocalDate(c.starts_at)===ds&&c.status!=='cancelled');
-    html+=`<div class="month-cell ${ds===today?'today-cell':''}" onclick="openNuevaCitaModalFecha('${ds}')"><div class="month-num">${d}</div>
-      ${dayCitas.slice(0,3).map(c=>`<div class="month-appt-pill" style="background:${svcColor(c.service)}22;color:${svcColor(c.service)}" onclick="event.stopPropagation();openCitaModal('${c.id}')">${esc(c.client_name)}</div>`).join('')}
-      ${dayCitas.length>3?`<div style="font-size:10px;color:var(--txt3)">+${dayCitas.length-3} más</div>`:''}
+    const dayBlk=dayCitas.find(c=>c.status==='blocked');
+    const normalCitas=dayCitas.filter(c=>c.status!=='blocked');
+    html+=`<div class="month-cell ${ds===today?'today-cell':''}" style="${dayBlk?'background:repeating-linear-gradient(-45deg,rgba(148,163,184,.06) 0,rgba(148,163,184,.06) 4px,transparent 4px,transparent 10px)':''}" onclick="openNuevaCitaModalFecha('${ds}')"><div class="month-num">${d}</div>
+      ${dayBlk?`<div class="month-appt-pill" style="background:#94a3b822;color:#94a3b8" onclick="event.stopPropagation();openCitaModal('${dayBlk.id}')">🔒 ${esc(dayBlk.service)}</div>`:''}
+      ${normalCitas.slice(0,2).map(c=>`<div class="month-appt-pill" style="background:${svcColor(c.service)}22;color:${svcColor(c.service)}" onclick="event.stopPropagation();openCitaModal('${c.id}')">${esc(c.client_name)}</div>`).join('')}
+      ${normalCitas.length>2?`<div style="font-size:10px;color:var(--txt3)">+${normalCitas.length-2} más</div>`:''}
     </div>`;
   }
   html+='</div>';
@@ -2144,7 +2263,6 @@ function openCitaModal(id){
         <div class="modal-field"><label>Duración</label><p>${c.duration_minutes||60} min</p></div>
       </div>
       ${(()=>{const d=_parseCitaDesign(c);return d?`<div style="margin:14px 0;padding:12px;background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;display:flex;align-items:center;gap:12px">
-        <div style="flex:0 0 60px;height:60px;overflow:hidden;border-radius:6px">${getSuitSVG(d)}</div>
         <div style="flex:1;font-size:12px;color:#6b21a8">
           <div style="font-weight:700;margin-bottom:2px">Diseño del cliente</div>
           <div>${COLOR_NAMES_P[d.color]||d.color} · Solapa ${LAPEL_NAMES_P[d.lapel]||d.lapel} · ${d.buttons} botón${d.buttons!==1?'es':''}</div>
@@ -2157,6 +2275,7 @@ function openCitaModal(id){
         <button class="btn btn-ghost" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="cambiarEstadoCita('${c.id}','completed');closeModal()">✔ Completar</button>
         <button class="btn btn-ghost" onclick="closeModal();openEditCitaModal('${c.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
         <button class="btn btn-danger" onclick="cambiarEstadoCita('${c.id}','cancelled');closeModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar</button>
+        <button class="btn btn-ghost" style="background:#fff;color:#dc2626;border:1.5px solid #dc2626" onclick="deleteCitaPermanente('${c.id}')">🗑 Eliminar definitivamente</button>
         <button class="btn btn-ghost" style="background:#e0f2fe;color:#0369a1;border-color:#bae6fd" onclick="crearClienteDesdeCita('${c.id}')">→ CRM</button>
         ${c.client_email?`<button class="btn btn-ghost" style="background:#fef9c3;color:#92400e;border-color:#fde68a" onclick="enviarRecordatorio('${c.id}')"> Recordatorio</button>`:''}
         ${_parseCitaDesign(c)?`<button class="btn" style="background:#fdf4ff;color:#9333ea;border:1px solid #e9d5ff" onclick="closeModal();crearEncargoDesdesCita('${c.id}')"> Crear encargo</button>`:''}
@@ -2195,6 +2314,16 @@ async function cambiarEstadoCita(id,status){
   emailjs.send('service_npmjvvf',tpl,base)
     .then(()=>showToast(' Email enviado a '+c.client_email))
     .catch(e=>{console.error('EmailJS error:',e);showToast('Email error');});
+}
+
+async function deleteCitaPermanente(id){
+  if(!confirm('¿Eliminar esta cita para siempre? Esta acción no se puede deshacer (a diferencia de "Cancelar", que solo la oculta).'))return;
+  const {error}=await _sb.from('appointments').delete().eq('id',id);
+  if(error){showToast('Error al eliminar la cita');return;}
+  allCitas=allCitas.filter(c=>c.id!==id);
+  if(typeof closeModal==='function')closeModal();
+  renderDashboard();updateBadges();renderCitas();
+  showToast('✓ Cita eliminada definitivamente');
 }
 
 function openEditCitaModal(id){
@@ -2273,7 +2402,15 @@ function openNuevaCitaModal(prefillDate, prefillTime){
         <div class="modal-field full"><label>Nombre del cliente *</label><input id="nc-name" placeholder="Ej: Juan García"/></div>
         <div class="modal-field"><label>Teléfono</label><input id="nc-phone" type="tel" placeholder="600 000 000"/></div>
         <div class="modal-field"><label>Email</label><input id="nc-email" type="email"/></div>
-        <div class="modal-field full"><label>Servicio *</label><input id="nc-service" placeholder="Ej: Toma de medidas"/></div>
+        <div class="modal-field full"><label>Servicio *</label>
+          <select id="nc-service" onchange="(function(){const s=document.getElementById('nc-service').value;const d=document.getElementById('nc-dur');if(s==='Traje de novios'||s==='Traje a medida')d.value=45;else if(s==='Camisa a medida'||s==='Otros')d.value=20;else d.value=60;})()">
+            <option value="">— Seleccionar servicio —</option>
+            <option value="Traje de novios">Traje de novios</option>
+            <option value="Traje a medida">Traje a medida</option>
+            <option value="Camisa a medida">Camisa a medida</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
         <div class="modal-field"><label>Fecha *</label><input id="nc-date" type="date" value="${defDate}"/></div>
         <div class="modal-field"><label>Hora *</label><input id="nc-time" type="time" value="${defTime}"/></div>
         <div class="modal-field"><label>Duración (min)</label><input id="nc-dur" type="number" value="60" min="15" step="15"/></div>
@@ -2301,6 +2438,43 @@ async function saveCita(){
   const payload={business_slug:BIZ_SLUG,client_name:name,client_phone:document.getElementById('nc-phone').value||null,client_email:document.getElementById('nc-email').value||null,service,starts_at,ends_at,duration_minutes:dur,status:document.getElementById('nc-status').value,notes:document.getElementById('nc-notes').value||null};
   await _sb.from('appointments').insert(payload);
   closeModal();loadAll();showToast('Cita creada');
+}
+function openBloqueoModal(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const hoy=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('modal-box').innerHTML=`
+    <div class="modal-hd"><div><h3>Bloquear días</h3><p style="font-size:12px;color:#94a3b8;margin:4px 0 0">Vacaciones, eventos o cierres. Los clientes no podrán reservar en este período.</p></div><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="modal-field"><label>Fecha inicio *</label><input id="bl-from" type="date" value="${hoy}"/></div>
+        <div class="modal-field"><label>Fecha fin *</label><input id="bl-to" type="date" value="${hoy}"/></div>
+        <div class="modal-field full"><label>Motivo</label><input id="bl-reason" placeholder="Ej: Vacaciones agosto"/></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-accent" onclick="saveBloqueo()">Bloquear</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+async function saveBloqueo(){
+  const from=document.getElementById('bl-from').value;
+  const to=document.getElementById('bl-to').value;
+  if(!from||!to){alert('Indica fecha inicio y fin');return;}
+  if(to<from){alert('La fecha fin debe ser igual o posterior al inicio');return;}
+  const reason=document.getElementById('bl-reason').value||'Cierre';
+  // Crear un bloqueo por cada día del rango
+  const rows=[];
+  let cur=new Date(from+'T00:00:00');
+  const end=new Date(to+'T23:59:59');
+  while(cur<=end){
+    const ds=cur.toISOString().slice(0,10);
+    rows.push({business_slug:BIZ_SLUG,client_name:'— BLOQUEADO —',service:reason,starts_at:ds+'T00:00:00.000Z',ends_at:ds+'T23:59:00.000Z',duration_minutes:1439,status:'blocked',notes:'bloqueo_manual'});
+    cur.setDate(cur.getDate()+1);
+  }
+  await _sb.from('appointments').insert(rows);
+  closeModal();loadAll();showToast(`${rows.length} día(s) bloqueado(s)`);
 }
 
 // ── LEADS ──────────────────────────────────────────────────────────────────
@@ -2331,9 +2505,9 @@ function renderLeads(){
         <div class="pipe-col-hd-label"><div class="pipe-col-dot" style="background:${stageDot[s]}"></div>${stageName[s]}</div>
         <span class="pipe-count-badge">${list.filter(l=>l.status===s).length}</span>
       </div>
-      <div class="pipe-body">
+      <div class="pipe-body" id="lead-col-${s}" ondragover="leadDragOver(event,'${s}')" ondragleave="leadDragLeave('${s}')" ondrop="leadDrop(event,'${s}')">
         ${list.filter(l=>l.status===s).map(l=>`
-          <div class="lead-card" onclick="openLeadModal('${l.id}')">
+          <div class="lead-card" draggable="true" ondragstart="leadDragStart(event,'${l.id}')" onclick="openLeadModal('${l.id}')">
             <div class="lead-card-name">${esc(l.name)}</div>
             <div class="lead-card-svc">${esc(l.interest||'—')}</div>
             ${l.phone?`<div style="font-size:12px;font-weight:600;color:#22c55e;margin-bottom:6px;">${esc(l.phone)}</div>`:''}
@@ -2347,6 +2521,22 @@ function renderLeads(){
           </div>`).join('')}
       </div>
     </div>`).join('')+'</div>';
+}
+
+let _leadDragId=null;
+function leadDragStart(e,id){_leadDragId=id;e.dataTransfer.effectAllowed='move';e.currentTarget.style.opacity='.4';}
+function leadDragOver(e,stage){e.preventDefault();document.getElementById('lead-col-'+stage).style.background='rgba(196,163,90,.08)';}
+function leadDragLeave(stage){document.getElementById('lead-col-'+stage).style.background='';}
+async function leadDrop(e,stage){
+  e.preventDefault();
+  document.getElementById('lead-col-'+stage).style.background='';
+  if(!_leadDragId) return;
+  const lead=allLeads.find(l=>l.id===_leadDragId);
+  if(!lead||lead.status===stage){_leadDragId=null;return;}
+  lead.status=stage;
+  renderLeads();
+  await _sb.from('leads').update({status:stage}).eq('id',_leadDragId);
+  _leadDragId=null;
 }
 
 async function leadToCRM(id){
@@ -2745,11 +2935,14 @@ async function crmSaveCliente(){
   if(fidEl&&fidEl.checked){if(!tagsVal.includes('fidelizado'))tagsVal=(tagsVal?tagsVal+',fidelizado':'fidelizado');}
   else{tagsVal=tagsVal.split(',').map(s=>s.trim()).filter(s=>s&&s!=='fidelizado').join(',');}
   const payload={business_slug:BIZ_SLUG,name,tipo:cv('cf-tipo')||'particular',empresa:cv('cf-empresa')||null,phone:cv('cf-phone')||null,email:cv('cf-email')||null,nif:cv('cf-nif')||null,iban:cv('cf-iban')||null,direccion:cv('cf-direccion')||null,tags:tagsVal||null,notes:cv('cf-notes')||null,measurements:Object.keys(m).length?m:null};
+  let savedId=_crmEditId;
   if(_crmEditId)await _sb.from('crm_clients').update(payload).eq('id',_crmEditId);
-  else await _sb.from('crm_clients').insert(payload);
-  crmCloseModal();crmLoadClientes();showToast('Cliente guardado');
+  else{const {data}=await _sb.from('crm_clients').insert(payload).select().single();savedId=data?.id;}
+  await crmLoadClientes();
+  crmCloseModal();showToast('Cliente guardado');
+  return savedId;
 }
-async function crmDeleteCliente(id){if(!confirm('¿Eliminar cliente?'))return;await _sb.from('crm_clients').delete().eq('id',id);crmLoadClientes();}
+async function crmDeleteCliente(id){if(!confirm('¿Eliminar cliente?'))return;await _sb.from('crm_clients').delete().eq('id',id);await crmLoadClientes();}
 
 // ── FIDELIZADOS ─────────────────────────────────────────────────────────────
 let _filtrFidelizados=false;
@@ -3123,7 +3316,7 @@ async function crmLoadEncargos(){
 function encKcard(o){
   const m=o.measurements||{};
   const medStr=Object.keys(m).length?`<div style="font-size:10px;color:#94a3b8;margin-bottom:4px">Alt:${m.altura||'—'} P:${m.pecho||'—'} C:${m.cintura||'—'}</div>`:'';
-  const thumb=o.suit_design?`<div class="kcard-suit-thumb" title="Diseño guardado">${getSuitSVG(o.suit_design)}</div>`:(o.fotos&&o.fotos.length?`<img src="${esc(o.fotos[0])}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px" onerror="this.style.display='none'"/>`:'');
+  const thumb=o.fotos&&o.fotos.length?`<img src="${esc(o.fotos[0])}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px" onerror="this.style.display='none'"/>`:'';
   const pg=o.pago||{};
   let pagoBadge='';
   if(pg.total){
@@ -3276,8 +3469,9 @@ function encMedidasHtml(m={}){
   <div class="crm-form-row" style="margin-bottom:6px">${n('cadera','Cadera',m.cadera||'')}${n('muslo','Muslo',m.muslo||'')}${n('rodilla','Rodilla',m.rodilla||'')}</div>
   <div class="crm-form-row" style="margin-bottom:6px">${n('gemelo','Gemelo',m.gemelo||'')}${n('bajos','Bajos',m.bajos||'')}${n('tiro','Tiro',m.tiro||'')}</div>
   <div class="crm-form-row" style="margin-bottom:6px">${n('espalda','Espalda',m.espalda||'')}${n('hombros','Hombros',m.hombros||'')}${n('biceps','Bíceps',m.biceps||'')}</div>
-  <div class="crm-form-row" style="margin-bottom:6px">${n('muneca','Muñeca',m.muneca||'')}${n('largo_manga','L.Manga',m.largo_manga||'')}${n('largo_chaqueta','L.Chaqueta',m.largo_chaqueta||'')}</div>
-  <div class="crm-form-row" style="margin-bottom:6px">${n('largo_chaleco','L.Chaleco',m.largo_chaleco||'')}${n('largo_pantalon','L.Pantalón',m.largo_pantalon||'')}${n('zapato','Zapato (nº)',m.zapato||'')}</div>`;
+  <div class="crm-form-row" style="margin-bottom:6px">${n('muneca','Muñeca',m.muneca||'')}${n('largo_manga','L.Manga',m.largo_manga||'')}${n('largo_pantalon','L.Pantalón',m.largo_pantalon||'')}</div>
+  <div class="crm-form-row" style="margin-bottom:6px">${n('largo_chaqueta_frontal','L.Chaqueta Frontal',m.largo_chaqueta_frontal||'')}${n('largo_chaqueta_posterior','L.Chaqueta Posterior',m.largo_chaqueta_posterior||'')}</div>
+  <div class="crm-form-row" style="margin-bottom:6px">${n('largo_chaleco_frontal','L.Chaleco Frontal',m.largo_chaleco_frontal||'')}${n('largo_chaleco_posterior','L.Chaleco Posterior',m.largo_chaleco_posterior||'')}${n('zapato','Zapato (nº)',m.zapato||'')}</div>`;
 }
 
 function encActualizarPago(){
@@ -3357,20 +3551,15 @@ async function _buildEncBody(o={}){
         <div class="crm-form-group"><label class="crm-form-label">Forro traje</label><input class="crm-form-ctrl" id="tej-forro-traje" value="${esc(tej.forro_traje||'')}"/></div>
       </div>
       <div class="crm-form-row" style="margin-bottom:6px">
-        <div class="crm-form-group"><label class="crm-form-label">Bordado traje</label><input class="crm-form-ctrl" id="tej-bordado" value="${esc(tej.bordado||'')}"/></div>
         <div class="crm-form-group"><label class="crm-form-label">Tejido chaleco</label><input class="crm-form-ctrl" id="tej-chaleco" value="${esc(tej.tejido_chaleco||'')}"/></div>
-      </div>
-      <div class="crm-form-row" style="margin-bottom:6px">
         <div class="crm-form-group"><label class="crm-form-label">Forro chaleco</label><input class="crm-form-ctrl" id="tej-forro-chaleco" value="${esc(tej.forro_chaleco||'')}"/></div>
-        <div class="crm-form-group"><label class="crm-form-label">Tejido camisa</label><input class="crm-form-ctrl" id="tej-camisa" value="${esc(tej.tejido_camisa||'')}"/></div>
       </div>
       <div class="crm-form-row" style="margin-bottom:6px">
-        <div class="crm-form-group"><label class="crm-form-label">Bordado camisa</label><input class="crm-form-ctrl" id="tej-bordado-camisa" value="${esc(tej.bordado_camisa||'')}"/></div>
+        <div class="crm-form-group"><label class="crm-form-label">Tejido camisa</label><input class="crm-form-ctrl" id="tej-camisa" value="${esc(tej.tejido_camisa||'')}"/></div>
         <div class="crm-form-group"><label class="crm-form-label">Diseño</label><input class="crm-form-ctrl" id="tej-diseno" value="${esc(tej.diseno||'')}"/></div>
       </div>
       <div class="crm-form-row" style="margin-bottom:6px">
-        <div class="crm-form-group"><label class="crm-form-label">Frase personalizada</label><input class="crm-form-ctrl" id="tej-frase" value="${esc(tej.frase||'')}"/></div>
-        <div class="crm-form-group"><label class="crm-form-label">Iniciales</label><input class="crm-form-ctrl" id="tej-iniciales" value="${esc(tej.iniciales||'')}"/></div>
+        <div class="crm-form-group"><label class="crm-form-label">Altura de pecho (cm)</label><input type="number" class="crm-form-ctrl" id="tej-altura-pecho" value="${esc(tej.altura_pecho||'')}"/></div>
       </div>
     </div>
 
@@ -3447,9 +3636,18 @@ async function crmEditEncargo(id){
   _crmEditId=id;
   _encMatsList=Array.isArray(o.materials)?o.materials.map(m=>({...m})):[];
   const body=await _buildEncBody(o);
-  crmOpenModal('Editar encargo',body,`<button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveEncargo()">Guardar</button>`);
+  crmOpenModal('Editar encargo',body,`<button class="btn btn-ghost" style="color:#dc2626" onclick="deleteEncargo('${id}')">🗑 Eliminar</button><div style="flex:1"></div><button class="btn btn-ghost" onclick="crmCloseModal()">Cancelar</button><button class="btn btn-accent" onclick="crmSaveEncargo()">Guardar</button>`);
   encRenderMats();
   if(o.client_id)encCargarMedidas(o.client_id);
+}
+async function deleteEncargo(id){
+  if(!confirm('¿Eliminar este encargo para siempre? Esta acción no se puede deshacer.'))return;
+  const {error}=await _sb.from('crm_orders').delete().eq('id',id);
+  if(error){showToast('Error al eliminar el encargo');return;}
+  crmCloseModal();
+  if(typeof _allEncargos!=='undefined')_allEncargos=_allEncargos.filter(o=>o.id!==id);
+  if(typeof crmLoadEncargos==='function')crmLoadEncargos();
+  showToast('✓ Encargo eliminado');
 }
 
 async function crmSaveEncargo(){
@@ -3459,7 +3657,7 @@ async function crmSaveEncargo(){
   // Medidas corporales
   const m={};
   const tv=cv('enc-talla');if(tv)m.talla=tv;
-  ['altura','peso','cuello','pecho','pecho_alto','estomago_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta','largo_chaleco','largo_pantalon','zapato']
+  ['altura','peso','cuello','pecho','pecho_alto','estomago_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta_frontal','largo_chaqueta_posterior','largo_chaleco_frontal','largo_chaleco_posterior','largo_pantalon','zapato']
     .forEach(f=>{const v=cv('enc-'+f);if(v)m[f]=Number(v);});
   // Accesorios en medidas
   ['acc-corbata','acc-gemelo','acc-panuelo','acc-otros'].forEach(id=>{const v=cv(id);if(v)m[id.replace('-','_')]=v;});
@@ -3475,7 +3673,7 @@ async function crmSaveEncargo(){
   Object.entries(evFields).forEach(([k,id])=>{const v=cv(id);if(v)evento[k]=v;});
   // Tejidos
   const tejidos={};
-  const tejFields={tejido_traje:'tej-traje',forro_traje:'tej-forro-traje',bordado:'tej-bordado',tejido_chaleco:'tej-chaleco',forro_chaleco:'tej-forro-chaleco',tejido_camisa:'tej-camisa',bordado_camisa:'tej-bordado-camisa',diseno:'tej-diseno',frase:'tej-frase',iniciales:'tej-iniciales'};
+  const tejFields={tejido_traje:'tej-traje',forro_traje:'tej-forro-traje',tejido_chaleco:'tej-chaleco',forro_chaleco:'tej-forro-chaleco',tejido_camisa:'tej-camisa',diseno:'tej-diseno',altura_pecho:'tej-altura-pecho'};
   Object.entries(tejFields).forEach(([k,id])=>{const v=cv(id);if(v)tejidos[k]=v;});
   // Pago
   const precio=parseFloat(cv('ef-price'))||null;
@@ -3689,9 +3887,11 @@ async function crmLoadFacturas(){
   if(sg){
     const nFacturas=_crmFacturas.filter(f=>f.type==='factura').length;
     const nPresupuestos=_crmFacturas.filter(f=>f.type==='presupuesto').length;
+    const totalFacturado=_crmFacturas.filter(f=>f.type==='factura').reduce((s,f)=>s+Number(f.total||0),0);
+    const totalCobrado=_crmFacturas.filter(f=>f.type==='factura'&&f.status==='pagado').reduce((s,f)=>s+Number(f.total||0),0);
     sg.innerHTML=`
-      <div class="stat-card"><div class="stat-val">—</div><div class="stat-label">Facturado total</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#4ade80">—</div><div class="stat-label">Cobrado</div></div>
+      <div class="stat-card"><div class="stat-val cu-plain" data-target="${totalFacturado}" data-cur="1">0</div><div class="stat-label">Facturado total</div></div>
+      <div class="stat-card"><div class="stat-val cu-plain" style="color:#4ade80" data-target="${totalCobrado}" data-cur="1">0</div><div class="stat-label">Cobrado</div></div>
       <div class="stat-card"><div class="stat-val cu-plain" data-target="${nFacturas}">0</div><div class="stat-label">Facturas emitidas</div></div>
       <div class="stat-card"><div class="stat-val cu-plain" data-target="${nPresupuestos}">0</div><div class="stat-label">Presupuestos</div></div>`;
   setTimeout(function(){sg.querySelectorAll('.cu-plain').forEach(function(el,i){var t=parseFloat(el.dataset.target),cur=el.dataset.cur;setTimeout(function(){var s=0,step=t/(600/16),iv=setInterval(function(){s=Math.min(s+step,t);el.textContent=cur?Math.round(s).toLocaleString('es-ES')+' €':Math.round(s);if(s>=t)clearInterval(iv);},16);},i*50);});},30);
@@ -3997,7 +4197,7 @@ async function imprimirContrato(id){
   const {data:o}=await _sb.from('crm_orders').select('*').eq('id',id).single();if(!o)return;
   const biz=getBizInfo();
   const m=o.measurements||{};const ev=o.evento||{};const tej=o.tejidos||{};const pg=o.pago||{};
-  const medLabels={altura:'Altura',peso:'Peso (kg)',cuello:'Cuello',pecho:'Pecho',estomago:'Estómago',cintura:'Cintura',cadera:'Cadera',muslo:'Muslo',rodilla:'Rodilla',gemelo:'Gemelo',bajos:'Bajos',tiro:'Tiro',espalda:'Espalda',hombros:'Hombros',biceps:'Bíceps',muneca:'Muñeca',largo_manga:'L. Manga',largo_chaqueta:'L. Chaqueta',largo_chaleco:'L. Chaleco',largo_pantalon:'L. Pantalón',zapato:'Zapato'};
+  const medLabels={altura:'Altura',peso:'Peso (kg)',cuello:'Cuello',pecho:'Pecho',estomago:'Estómago',cintura:'Cintura',cadera:'Cadera',muslo:'Muslo',rodilla:'Rodilla',gemelo:'Gemelo',bajos:'Bajos',tiro:'Tiro',espalda:'Espalda',hombros:'Hombros',biceps:'Bíceps',muneca:'Muñeca',largo_manga:'L. Manga',largo_chaqueta_frontal:'L. Chaqueta Frontal',largo_chaqueta_posterior:'L. Chaqueta Posterior',largo_chaleco_frontal:'L. Chaleco Frontal',largo_chaleco_posterior:'L. Chaleco Posterior',largo_pantalon:'L. Pantalón',zapato:'Zapato'};
   const medRows=Object.entries(medLabels).filter(([k])=>m[k]).map(([k,lbl])=>`<tr><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#64748b">${lbl}</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600">${m[k]}${k!=='talla'&&k!=='zapato'&&k!=='peso'?' cm':k==='peso'?' kg':''}</td></tr>`).join('');
   const tejRows=Object.entries({tejido_traje:'Tejido traje',forro_traje:'Forro traje',bordado:'Bordado',tejido_chaleco:'Tejido chaleco',forro_chaleco:'Forro chaleco',tejido_camisa:'Tejido camisa',diseno:'Diseño',frase:'Frase',iniciales:'Iniciales'}).filter(([k])=>tej[k]).map(([k,lbl])=>`<tr><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#64748b">${lbl}</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:600">${esc(tej[k])}</td></tr>`).join('');
   document.getElementById('crm-print-body').innerHTML=`
@@ -4086,8 +4286,8 @@ async function comprasLoad(){
     const totalMes=_compras.filter(c=>c.fecha&&c.fecha.startsWith(mes)).reduce((s,c)=>s+Number(c.importe||0),0);
     const cats=[...new Set(_compras.map(c=>c.categoria).filter(Boolean))].length;
     sg.innerHTML=`
-      <div class="stat-card"><div class="stat-val">—</div><div class="stat-label">Gasto total</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#f59e0b">—</div><div class="stat-label">Gasto este mes</div></div>
+      <div class="stat-card"><div class="stat-val cu-plain" data-target="${total}" data-cur="1">0</div><div class="stat-label">Gasto total</div></div>
+      <div class="stat-card"><div class="stat-val cu-plain" style="color:#f59e0b" data-target="${totalMes}" data-cur="1">0</div><div class="stat-label">Gasto este mes</div></div>
       <div class="stat-card"><div class="stat-val cu-plain" data-target="${cats}">0</div><div class="stat-label">Categorías</div></div>
       <div class="stat-card"><div class="stat-val cu-plain" data-target="${_compras.length}">0</div><div class="stat-label">Facturas registradas</div></div>`;
   setTimeout(function(){sg.querySelectorAll('.cu-plain').forEach(function(el,i){var t=parseFloat(el.dataset.target),cur=el.dataset.cur;setTimeout(function(){var s=0,step=t/(600/16),iv=setInterval(function(){s=Math.min(s+step,t);el.textContent=cur?Math.round(s).toLocaleString('es-ES')+' €':Math.round(s);if(s>=t)clearInterval(iv);},16);},i*50);});},30);
@@ -5316,10 +5516,10 @@ async function calcIGIC(){
   document.getElementById('igic-print-btn').style.display='';
   document.getElementById('igic-result').innerHTML=`
     <div class="stats-grid" style="margin-bottom:16px">
-      <div class="stat-card"><div class="stat-val">—</div><div class="stat-label">Ventas brutas</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#ef4444">—</div><div class="stat-label">IGIC repercutido (cobrado)</div></div>
-      <div class="stat-card"><div class="stat-val" style="color:#16a34a">—</div><div class="stat-label">IGIC soportado (pagado)</div></div>
-      <div class="stat-card ${resultado>0?'stat-warn':''}"><div class="stat-val" style="color:${resultado>0?'#ef4444':'#16a34a'}">—</div><div class="stat-label">${resultado>0?'A PAGAR a Hacienda':'A DEVOLVER'}</div></div>
+      <div class="stat-card"><div class="stat-val">${crmFmt(totalVentas)}</div><div class="stat-label">Ventas brutas</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#ef4444">${crmFmt(igicRepercutido)}</div><div class="stat-label">IGIC repercutido (cobrado)</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#16a34a">${crmFmt(igicSoportado)}</div><div class="stat-label">IGIC soportado (pagado)</div></div>
+      <div class="stat-card ${resultado>0?'stat-warn':''}"><div class="stat-val" style="color:${resultado>0?'#ef4444':'#16a34a'}">${crmFmt(Math.abs(resultado))}</div><div class="stat-label">${resultado>0?'A PAGAR a Hacienda':'A DEVOLVER'}</div></div>
     </div>
     <div class="igic-box">
       <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Desglose ${IGIC_T_LABEL[q]} ${y}</div>
@@ -6328,8 +6528,8 @@ function vistaRealRender(){
 function vistaRealNueva(){
   const clientes=(_crmClientes||[]).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const opts=clientes.map(c=>`<option value="${c.id}">${esc(c.name||'')}</option>`).join('');
-  const MED_KEYS=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta','largo_chaleco','largo_pantalon','talla','zapato'];
-  const MED_LABELS={altura:'Altura (cm)',peso:'Peso (kg)',cuello:'Cuello (cm)',pecho:'Pecho (cm)',pecho_alto:'Pecho alto (cm)',estomago:'Estómago (cm)',cintura:'Cintura (cm)',cadera:'Cadera (cm)',muslo:'Muslo (cm)',rodilla:'Rodilla (cm)',gemelo:'Gemelo (cm)',bajos:'Bajos (cm)',tiro:'Tiro (cm)',espalda:'Espalda (cm)',hombros:'Hombros (cm)',biceps:'Bíceps (cm)',muneca:'Muñeca (cm)',largo_manga:'Largo manga (cm)',largo_chaqueta:'Largo chaqueta (cm)',largo_chaleco:'Largo chaleco (cm)',largo_pantalon:'Largo pantalón (cm)',talla:'Talla chaqueta',zapato:'Talla zapato'};
+  const MED_KEYS=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta_frontal','largo_chaqueta_posterior','largo_chaleco_frontal','largo_chaleco_posterior','largo_pantalon','talla','zapato'];
+  const MED_LABELS={altura:'Altura (cm)',peso:'Peso (kg)',cuello:'Cuello (cm)',pecho:'Pecho (cm)',pecho_alto:'Pecho alto (cm)',estomago:'Estómago (cm)',cintura:'Cintura (cm)',cadera:'Cadera (cm)',muslo:'Muslo (cm)',rodilla:'Rodilla (cm)',gemelo:'Gemelo (cm)',bajos:'Bajos (cm)',tiro:'Tiro (cm)',espalda:'Espalda (cm)',hombros:'Hombros (cm)',biceps:'Bíceps (cm)',muneca:'Muñeca (cm)',largo_manga:'Largo manga (cm)',largo_chaqueta_frontal:'Largo chaqueta frontal (cm)',largo_chaqueta_posterior:'Largo chaqueta posterior (cm)',largo_chaleco_frontal:'Largo chaleco frontal (cm)',largo_chaleco_posterior:'Largo chaleco posterior (cm)',largo_pantalon:'Largo pantalón (cm)',talla:'Talla chaqueta',zapato:'Talla zapato'};
   const medFields=MED_KEYS.map(k=>`<div class="crm-form-group" style="min-width:120px"><label class="crm-form-label" style="font-size:10px">${MED_LABELS[k]||k}</label><input type="${['talla','zapato'].includes(k)?'text':'number'}" class="crm-form-ctrl" id="vr-med-${k}" step="0.1" placeholder="—" style="padding:5px 8px;font-size:13px"/></div>`).join('');
   const body=`
     <div class="crm-form-group"><label class="crm-form-label">Cliente *</label>
@@ -6366,7 +6566,7 @@ function vrCargarMedidas(clientId){
   const cl=(_crmClientes||[]).find(c=>c.id===clientId);
   if(!cl)return;
   const ms=cl.medidas||cl.measurements||{};
-  const keys=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta','largo_chaleco','largo_pantalon','talla','zapato'];
+  const keys=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta_frontal','largo_chaqueta_posterior','largo_chaleco_frontal','largo_chaleco_posterior','largo_pantalon','talla','zapato'];
   keys.forEach(k=>{const el=document.getElementById('vr-med-'+k);if(el&&ms[k])el.value=ms[k];});
   if(cl.name){
     const obs=document.getElementById('vr-morfo');
@@ -6375,7 +6575,7 @@ function vrCargarMedidas(clientId){
 }
 
 function vrGenerarPrompt(){
-  const MED_LABELS={altura:'altura',peso:'peso',cuello:'cuello',pecho:'pecho',pecho_alto:'pecho alto',estomago:'estómago',cintura:'cintura',cadera:'cadera',muslo:'muslo',rodilla:'rodilla',gemelo:'gemelo',bajos:'bajos',tiro:'tiro',espalda:'espalda',hombros:'hombros',biceps:'bíceps',muneca:'muñeca',largo_manga:'largo manga',largo_chaqueta:'largo chaqueta',largo_chaleco:'largo chaleco',largo_pantalon:'largo pantalón',talla:'talla chaqueta',zapato:'talla zapato'};
+  const MED_LABELS={altura:'altura',peso:'peso',cuello:'cuello',pecho:'pecho',pecho_alto:'pecho alto',estomago:'estómago',cintura:'cintura',cadera:'cadera',muslo:'muslo',rodilla:'rodilla',gemelo:'gemelo',bajos:'bajos',tiro:'tiro',espalda:'espalda',hombros:'hombros',biceps:'bíceps',muneca:'muñeca',largo_manga:'largo manga',largo_chaqueta_frontal:'largo chaqueta frontal',largo_chaqueta_posterior:'largo chaqueta posterior',largo_chaleco_frontal:'largo chaleco frontal',largo_chaleco_posterior:'largo chaleco posterior',largo_pantalon:'largo pantalón',talla:'talla chaqueta',zapato:'talla zapato'};
   const keys=Object.keys(MED_LABELS);
   const meds=keys.map(k=>{const el=document.getElementById('vr-med-'+k);return el&&el.value?MED_LABELS[k]+': '+el.value+((['talla','zapato'].includes(k))?'':' cm'):null;}).filter(Boolean);
   const desc=document.getElementById('vr-desc')?.value||'';
@@ -6404,7 +6604,7 @@ async function vistaRealGuardar(){
   const color=cv('vr-color');const mat=cv('vr-mat');const morfo=cv('vr-morfo');const obs=cv('vr-obs');
   const promptOut=document.getElementById('vr-prompt-out');const prompt=promptOut?promptOut.value:'';
   const notesParts=[color&&('Color: '+color),mat&&('Tejido: '+mat),morfo&&('Cliente: '+morfo),obs,prompt&&('PROMPT IA: '+prompt)].filter(Boolean);
-  const keys=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta','largo_chaleco','largo_pantalon','talla','zapato'];
+  const keys=['altura','peso','cuello','pecho','pecho_alto','estomago','cintura','cadera','muslo','rodilla','gemelo','bajos','tiro','espalda','hombros','biceps','muneca','largo_manga','largo_chaqueta_frontal','largo_chaqueta_posterior','largo_chaleco_frontal','largo_chaleco_posterior','largo_pantalon','talla','zapato'];
   const meds={};keys.forEach(k=>{const el=document.getElementById('vr-med-'+k);if(el&&el.value)meds[k]=el.value;});
   const {error}=await _sb.from('crm_orders').insert({business_slug:BIZ_SLUG,title:desc,client_id:clientId,client_name:cl?.name||'',status:'vista-real',notes:notesParts.join(' | ')||null,measurements:meds});
   if(error){showToast('Error al guardar');return;}
@@ -7620,11 +7820,11 @@ async function sincronizarContactosHolded(){
     }
 
     if(typeof crmRenderClientes==='function')crmRenderClientes(_crmClientes);
-    const msg=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px"><polyline points="20 6 9 17 4 12"/></svg> Sincronización completa\n\n• Nuevos: ${nuevos}\n• Enriquecidos: ${actualizados}\n• Sin cambios: ${omitidos}`;
-    alert(msg);
+    showToast(`Holded sync: ${nuevos} nuevos · ${actualizados} enriquecidos · ${omitidos} sin cambios`);
     if(typeof soundSuccess==='function')soundSuccess();
   } catch(e){
-    alert(' Error: '+e.message+'\n\nVerifica que el proxy /api/holded está desplegado en Vercel.');
+    showToast('Error sync Holded: '+e.message);
+    console.error(e);
   } finally {
     if(btn){btn.disabled=false;btn.textContent='Importar Holded';}
   }
@@ -7851,12 +8051,16 @@ async function _iaExecTool(name, args){
         const horaStr=new Date(cita.starts_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
         try{
           await emailjs.send('service_npmjvvf','template_qnip0mc',{
-            to_email:cita.client_email,
-            cliente:cita.client_name||'',
+            cliente_nombre:cita.client_name||'',
+            cliente_email:cita.client_email,
+            cliente_telefono:cita.client_phone||'—',
+            negocio_nombre:BIZ_NAME||'Jose Acosta Style',
             servicio:cita.service||'',
+            duracion:(cita.duration_minutes||60)+' min',
+            precio:'',
             fecha:fechaStr,
             hora:horaStr,
-            negocio_nombre:BIZ_NAME||'Jose Acosta Style'
+            reply_to:'airmateai@gmail.com'
           });
           return {ok:true,enviado_a:cita.client_email};
         }catch(e){return {ok:false,error:'EmailJS error: '+(e.text||e.message||'')};}
@@ -8158,6 +8362,384 @@ Estado: ${citasHoy} citas hoy · ${encActivos} encargos activos.`;
 
 // Sustituye la función iaSend si está cargado el agente con tools
 window._iaUseAgent=true;
+
+// ══════════════════════════════════════════
+// RECEPCIÓN DE STOCK / PUNTEO
+// ══════════════════════════════════════════
+const HOLDED_PROXY = 'https://bot-airmate-1.vercel.app/api/holded';
+const ANTHROPIC_PROXY = 'https://bot-airmate-1.vercel.app/api/chat';
+
+let punteoLines = []; // [{id, sku, nombre, cantidad_esperada, cantidad_real, checked, holded_product_id}]
+let punteoImageB64 = null;
+let punteoHistorial = [];
+
+// ── Cargar historial desde Supabase ──
+async function punteoLoadHistorial(){
+  const {data} = await _sb.from('stock_recepciones').select('*').eq('business_slug','jose-acosta').order('created_at',{ascending:false}).limit(10);
+  punteoHistorial = data||[];
+  renderPunteoHistorial();
+}
+
+function renderPunteoHistorial(){
+  const el = document.getElementById('punteo-historial-tbody');
+  if(!el) return;
+  if(!punteoHistorial.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--txt3);font-size:13px;">Sin recepciones registradas aún</div>';
+    return;
+  }
+  el.innerHTML = punteoHistorial.map(r=>{
+    const fecha = new Date(r.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
+    const lineas = JSON.parse(r.lineas||'[]');
+    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border2);">
+      <div style="width:36px;height:36px;background:var(--gold-lt,#f9f4ea);border-radius:8px;display:grid;place-items:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c4a35a" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--txt);">${r.proveedor||'Recepción sin proveedor'}</div>
+        <div style="font-size:11px;color:var(--txt3);">${fecha} · ${lineas.length} productos · ${lineas.reduce((a,l)=>a+(Number(l.cantidad_real)||0),0)} uds recibidas</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;">Completado</span>
+    </div>`;
+  }).join('');
+}
+
+function punteoNuevo(){
+  punteoLines = [];
+  punteoImageB64 = null;
+  document.getElementById('punteo-inicio').style.display='none';
+  document.getElementById('punteo-procesando').style.display='none';
+  document.getElementById('punteo-activo').style.display='none';
+  document.getElementById('punteo-exito').style.display='none';
+  document.getElementById('punteo-inicio').style.display='block';
+  document.getElementById('punteo-file-input').value='';
+}
+
+function punteoDrop(e){
+  e.preventDefault();
+  document.getElementById('punteo-drop-zone').style.borderColor='';
+  const f = e.dataTransfer.files[0];
+  if(f) punteoReadFile(f);
+}
+
+function punteoReadFile(file){
+  if(!file||!file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    punteoImageB64 = e.target.result; // data:image/...;base64,...
+    await punteoAnalizarImagen();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function punteoAnalizarImagen(){
+  document.getElementById('punteo-inicio').style.display='none';
+  document.getElementById('punteo-procesando').style.display='block';
+
+  try{
+    // Llama a GPT-4o via proxy con la imagen (formato OpenAI)
+    const resp = await fetch(ANTHROPIC_PROXY,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'gpt-4o',
+        max_tokens:1500,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image_url', image_url:{url: punteoImageB64}},
+            {type:'text',text:`Eres un asistente de gestión de stock para una sastrería. Analiza este albarán de entrega y extrae TODOS los productos con sus cantidades.
+Devuelve ÚNICAMENTE un JSON válido con este formato exacto (sin texto adicional):
+{
+  "proveedor": "nombre del proveedor si aparece o null",
+  "fecha_albaran": "fecha si aparece en formato YYYY-MM-DD o null",
+  "numero_albaran": "número si aparece o null",
+  "productos": [
+    {"nombre": "descripción del producto", "referencia": "ref/sku si aparece o null", "cantidad": número}
+  ]
+}
+Si no puedes leer el albarán claramente, devuelve {"error": "No se puede leer el documento"}.`}
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content||'';
+    let parsed;
+    try{ parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+    catch(e){ parsed = {error:'No se pudo procesar'}; }
+
+    if(parsed.error || !parsed.productos?.length){
+      // Fallback a manual con imagen
+      punteoLines = [];
+      punteoMostrarActivo(parsed.proveedor||'', parsed.fecha_albaran||'', parsed.numero_albaran||'');
+    } else {
+      punteoLines = parsed.productos.map((p,i)=>({
+        id: i,
+        nombre: p.nombre,
+        referencia: p.referencia||'',
+        cantidad_esperada: p.cantidad,
+        cantidad_real: p.cantidad,
+        checked: false,
+        holded_id: null,
+      }));
+      punteoMostrarActivo(parsed.proveedor||'', parsed.fecha_albaran||'', parsed.numero_albaran||'');
+    }
+  } catch(err){
+    console.error(err);
+    punteoLines = [];
+    punteoMostrarActivo('','','');
+  }
+}
+
+let _punteoProveedor='', _puntoFecha='', _punteoNumAlbaran='';
+
+function punteoMostrarActivo(proveedor, fecha, numAlbaran){
+  _punteoProveedor = proveedor;
+  _puntoFecha = fecha;
+  _punteoNumAlbaran = numAlbaran;
+  document.getElementById('punteo-procesando').style.display='none';
+  document.getElementById('punteo-inicio').style.display='none';
+  document.getElementById('punteo-activo').style.display='block';
+
+  // Foto preview
+  const img = document.getElementById('punteo-preview-img');
+  const noFoto = document.getElementById('punteo-no-foto');
+  if(punteoImageB64){
+    img.src = punteoImageB64;
+    img.style.display='block';
+    noFoto.style.display='none';
+  } else {
+    img.style.display='none';
+    noFoto.style.display='block';
+  }
+
+  renderPunteoLines();
+}
+
+function punteoManual(){
+  punteoImageB64 = null;
+  punteoLines = [];
+  punteoMostrarActivo('','','');
+}
+
+function renderPunteoLines(){
+  const cont = document.getElementById('punteo-lines');
+  if(!punteoLines.length){
+    cont.innerHTML=`<div style="padding:20px;text-align:center;color:var(--txt3);font-size:13px;">
+      Sin productos — <span style="color:#c4a35a;cursor:pointer;text-decoration:underline;" onclick="punteoAddLine()">añade una línea</span>
+    </div>`;
+  } else {
+    cont.innerHTML = punteoLines.map((l,i)=>`
+      <div style="display:grid;grid-template-columns:32px 1fr 110px 110px 40px;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border2);${l.checked?'background:#f0fdf4;':''}" id="punteo-line-${i}">
+        <div onclick="punteoToggle(${i})" style="width:24px;height:24px;border-radius:6px;border:2px solid ${l.checked?'#16a34a':'var(--border)'};background:${l.checked?'#16a34a':'transparent'};display:grid;place-items:center;cursor:pointer;flex-shrink:0;transition:all .15s;">
+          ${l.checked?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+        </div>
+        <div>
+          <input style="width:100%;font-size:13px;font-weight:500;border:none;outline:none;background:transparent;color:var(--txt);" value="${escHtml(l.nombre)}" onchange="punteoLines[${i}].nombre=this.value;updatePunteoResumen();" placeholder="Nombre del producto">
+          <input style="width:100%;font-size:11px;border:none;outline:none;background:transparent;color:var(--txt3);margin-top:2px;" value="${escHtml(l.referencia||'')}" onchange="punteoLines[${i}].referencia=this.value;" placeholder="Referencia / SKU">
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Esperado</div>
+          <input type="number" min="0" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:center;" value="${l.cantidad_esperada}" onchange="punteoLines[${i}].cantidad_esperada=Number(this.value);updatePunteoResumen();">
+        </div>
+        <div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Recibido</div>
+          <input type="number" min="0" style="width:100%;padding:6px 8px;border:1.5px solid ${l.checked?'#16a34a':'var(--border)'};border-radius:6px;font-size:13px;font-weight:700;text-align:center;color:${l.checked?'#16a34a':'var(--txt)'};" value="${l.cantidad_real}" onchange="punteoLines[${i}].cantidad_real=Number(this.value);updatePunteoResumen();">
+        </div>
+        <div onclick="punteoRemoveLine(${i})" style="cursor:pointer;color:var(--txt3);display:grid;place-items:center;width:32px;height:32px;border-radius:6px;transition:all .15s;" onmouseover="this.style.background='#fee2e2';this.style.color='#dc2626'" onmouseout="this.style.background='';this.style.color=''">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </div>
+      </div>
+    `).join('');
+  }
+  updatePunteoResumen();
+}
+
+function punteoToggle(i){
+  punteoLines[i].checked = !punteoLines[i].checked;
+  renderPunteoLines();
+}
+
+function punteoRemoveLine(i){
+  punteoLines.splice(i,1);
+  punteoLines.forEach((l,idx)=>l.id=idx);
+  renderPunteoLines();
+}
+
+function punteoAddLine(){
+  punteoLines.push({id:punteoLines.length, nombre:'', referencia:'', cantidad_esperada:1, cantidad_real:1, checked:false});
+  renderPunteoLines();
+  // Focus last input
+  setTimeout(()=>{
+    const inputs = document.querySelectorAll('#punteo-lines input[placeholder="Nombre del producto"]');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },50);
+}
+
+function updatePunteoResumen(){
+  const total = punteoLines.length;
+  const chequeados = punteoLines.filter(l=>l.checked).length;
+  const totalUds = punteoLines.reduce((a,l)=>a+(Number(l.cantidad_real)||0),0);
+  const totalEsp = punteoLines.reduce((a,l)=>a+(Number(l.cantidad_esperada)||0),0);
+  const diff = totalUds - totalEsp;
+  document.getElementById('punteo-counter').textContent = `${chequeados}/${total} verificados`;
+  document.getElementById('punteo-resumen-body').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);"><span style="font-size:12px;color:var(--txt3);">Productos</span><span style="font-size:12px;font-weight:700;">${total}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);"><span style="font-size:12px;color:var(--txt3);">Verificados</span><span style="font-size:12px;font-weight:700;color:#16a34a;">${chequeados}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);"><span style="font-size:12px;color:var(--txt3);">Uds esperadas</span><span style="font-size:12px;font-weight:700;">${totalEsp}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2);"><span style="font-size:12px;color:var(--txt3);">Uds recibidas</span><span style="font-size:12px;font-weight:700;">${totalUds}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:7px 0;"><span style="font-size:12px;color:var(--txt3);">Diferencia</span><span style="font-size:12px;font-weight:700;color:${diff===0?'#16a34a':diff>0?'#2563eb':'#dc2626'}">${diff>0?'+':''}${diff} uds</span></div>
+    ${_punteoProveedor?`<div style="margin-top:10px;font-size:11px;color:var(--txt3);border-top:1px solid var(--border2);padding-top:10px;"><b>Proveedor:</b> ${_punteoProveedor}</div>`:''}
+    ${_punteoNumAlbaran?`<div style="font-size:11px;color:var(--txt3);"><b>Albarán:</b> ${_punteoNumAlbaran}</div>`:''}
+  `;
+}
+
+async function punteoConfirmar(){
+  if(!punteoLines.length){ toast('Añade al menos un producto'); return; }
+  const btn = document.getElementById('punteo-confirm-btn');
+  btn.disabled=true; btn.textContent='Actualizando stock...';
+
+  let updated=0, errors=0;
+
+  // Actualizar stock en Holded para cada línea
+  for(const line of punteoLines){
+    if(!line.nombre||!line.cantidad_real) continue;
+    try{
+      // Buscar producto en Holded por nombre/referencia
+      const searchResp = await fetch(HOLDED_PROXY,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({slug:'jose-acosta', action:'search_product', payload:{name:line.nombre, sku:line.referencia||null}})
+      });
+      if(searchResp.ok){
+        const products = await searchResp.json();
+        const match = Array.isArray(products) ? products.find(p=>
+          p.name?.toLowerCase().includes(line.nombre.toLowerCase().slice(0,8)) ||
+          (line.referencia && p.sku===line.referencia)
+        ) : null;
+        if(match){
+          const stockResp = await fetch(HOLDED_PROXY,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({slug:'jose-acosta', action:'update_stock', payload:{product_id:match.id, quantity:line.cantidad_real}})
+          });
+          if(stockResp.ok) updated++;
+          else errors++;
+        }
+      }
+    } catch(e){ errors++; }
+  }
+
+  // Actualizar crm_inventory en Supabase directamente
+  const {data: invItems} = await _sb.from('crm_inventory').select('id,name,stock,holded_id').eq('business_slug','jose-acosta');
+  for(const line of punteoLines){
+    if(!line.cantidad_real) continue;
+    const match = (invItems||[]).find(p=>
+      p.name?.toLowerCase()===line.nombre?.toLowerCase() ||
+      (line.referencia && p.sku===line.referencia)
+    );
+    if(match){
+      await _sb.from('crm_inventory').update({stock:(match.stock||0)+Number(line.cantidad_real)}).eq('id',match.id);
+      await _sb.from('crm_inventory_movements').insert({business_slug:'jose-acosta',inventory_id:match.id,tipo:'entrada',cantidad:Number(line.cantidad_real),motivo:`Albarán${_punteoNumAlbaran?' #'+_punteoNumAlbaran:''}${_punteoProveedor?' · '+_punteoProveedor:''}`});
+    }
+  }
+
+  // Guardar recepción en Supabase
+  await _sb.from('stock_recepciones').insert({
+    business_slug: 'jose-acosta',
+    proveedor: _punteoProveedor||null,
+    fecha_albaran: _puntoFecha||null,
+    numero_albaran: _punteoNumAlbaran||null,
+    lineas: JSON.stringify(punteoLines),
+    tiene_imagen: !!punteoImageB64,
+    updated_en_holded: updated,
+  });
+
+  // Mostrar éxito
+  document.getElementById('punteo-activo').style.display='none';
+  document.getElementById('punteo-exito').style.display='block';
+  document.getElementById('punteo-exito-msg').textContent =
+    `${punteoLines.length} productos registrados · ${updated} actualizados en Holded${errors?' · '+errors+' sin coincidencia en catálogo':''}`;
+
+  punteoLoadHistorial();
+}
+
+function punteoReset(){
+  punteoLines=[];punteoImageB64=null;
+  _punteoProveedor='';_puntoFecha='';_punteoNumAlbaran='';
+  document.getElementById('punteo-inicio').style.display='block';
+  document.getElementById('punteo-procesando').style.display='none';
+  document.getElementById('punteo-activo').style.display='none';
+  document.getElementById('punteo-exito').style.display='none';
+}
+
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Cargar historial cuando se abre el pane
+const _origShowTab2 = window.showTab;
+window.showTab = function(id, btn){
+  _origShowTab2(id, btn);
+  if(id==='punteo') punteoLoadHistorial();
+};
+
+// Crear tabla en Supabase si no existe (silencioso)
+_sb.from('stock_recepciones').select('id').limit(1).then(({error})=>{
+  if(error) console.log('Tabla stock_recepciones pendiente de crear');
+});
+
+// ══════════════════════════════════════════
+// SYNC HOLDED → PANEL
+// ══════════════════════════════════════════
+
+async function holdedGet(endpoint, params=''){
+  const url = `${HOLDED_PROXY}?slug=jose-acosta&endpoint=${encodeURIComponent(endpoint)}${params?'&params='+encodeURIComponent(params):''}`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error(`Holded ${endpoint}: ${r.status}`);
+  return r.json();
+}
+
+// ── Sync productos Holded → crm_inventory ──
+async function holdedSyncStock(){
+  const btn = document.getElementById('holded-sync-stock-btn');
+  btn.disabled=true; btn.textContent='Sincronizando...';
+  try{
+    const products = await holdedGet('products');
+    if(!Array.isArray(products) || !products.length){ showToast('Sin productos en Holded'); return; }
+
+    let nuevos=0, actualizados=0;
+    for(const p of products){
+      const payload = {
+        business_slug: BIZ_SLUG,
+        name: p.name||'Sin nombre',
+        sku: p.sku||null,
+        category: p.kind||null,
+        stock: p.stock??0,
+        stock_min: p.minStock??0,
+        unit: p.unit||'ud',
+        purchase_price: p.price||0,
+        holded_id: p.id,
+      };
+      // Upsert por holded_id si existe, si no por nombre
+      const {data:existing} = await _sb.from('crm_inventory').select('id').eq('business_slug',BIZ_SLUG).eq('holded_id',p.id).maybeSingle();
+      if(existing){
+        await _sb.from('crm_inventory').update({stock:payload.stock, purchase_price:payload.purchase_price, stock_min:payload.stock_min}).eq('id',existing.id);
+        actualizados++;
+      } else {
+        await _sb.from('crm_inventory').insert(payload);
+        nuevos++;
+      }
+    }
+    showToast(`Holded sync: ${nuevos} nuevos · ${actualizados} actualizados`);
+    crmLoadInventario();
+  } catch(e){
+    showToast('Error sync Holded: '+e.message);
+    console.error(e);
+  } finally {
+    btn.disabled=false; btn.textContent='⟳ Sync Holded';
+  }
+}
+
+// ── Sync contactos Holded → crm_clients ──
 
 </script>
 </body>
