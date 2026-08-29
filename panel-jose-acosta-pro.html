@@ -6383,6 +6383,22 @@ async function tpvCobrar() {
 
   if(error){ showToast('️ Error al guardar venta'); console.error(error); return; }
 
+  // Reflejar la venta en Facturación / IGIC / Verifactu (misma tabla que las facturas normales)
+  try{
+    const invoice_number=await _nextInvoiceNum('ticket');
+    await _sb.from('crm_invoices').insert({
+      business_slug:BIZ_SLUG,
+      client_name:'Venta mostrador (TPV)',
+      type:'ticket',
+      status:'pagado',
+      items:lineas.map(function(l){return {desc:l.nombre,qty:l.qty,price:l.precio};}),
+      total:total,
+      issue_date:new Date().toISOString().split('T')[0],
+      notes:`Venta TPV · ${_tpvPago} · ref ${venta.id.slice(0,8).toUpperCase()}`,
+      invoice_number
+    });
+  }catch(e){ console.error('No se pudo reflejar la venta TPV en Facturación:',e); }
+
   // Descontar stock
   for(var c of _tpvCarrito){
     var p=TPV_PRODUCTOS.find(function(x){return x.id===c.id;});
