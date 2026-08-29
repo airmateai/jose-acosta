@@ -5652,7 +5652,7 @@ async function calcVencimientos(){
 }
 
 // ── FINANZAS · Chart.js + Holded ───────────────────────────────────────────
-const HOLDED_PROXY = 'https://airmate.es/api/holded';
+const HOLDED_PROXY = 'https://bot-airmate-1.vercel.app/api/holded';
 let _finCharts = {};
 let _finCache = { treasury:null, expensesAcc:null, payments:null, salesreceipt:null, creditnote:null, ts:0 };
 const _GOLD = '#c4a35a', _GOLD_DK = '#9a7f45', _GOLD_LT = '#e8c97a', _CREAM = '#faf7ef';
@@ -8384,7 +8384,6 @@ window._iaUseAgent=true;
 // ══════════════════════════════════════════
 // RECEPCIÓN DE STOCK / PUNTEO
 // ══════════════════════════════════════════
-const HOLDED_PROXY = 'https://bot-airmate-1.vercel.app/api/holded';
 const ANTHROPIC_PROXY = 'https://bot-airmate-1.vercel.app/api/chat';
 
 let punteoLines = []; // [{id, sku, nombre, cantidad_esperada, cantidad_real, checked, holded_product_id}]
