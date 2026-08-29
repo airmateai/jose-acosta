@@ -7412,18 +7412,10 @@ mark.gs-hl{background:rgba(196,163,90,.35);color:#fff;border-radius:2px;padding:
     if(msg&&typeof notificar==='function')notificar(' '+msg);
   };
 
-  if(document.startViewTransition&&typeof window.showTab==='function'){
-    var _orig=window.showTab;
-    var _transitioning=false;
-    window.showTab=function(id,btn){
-      if(_transitioning){_orig(id,btn);return;}
-      try{
-        _transitioning=true;
-        var t=document.startViewTransition(function(){_orig(id,btn);});
-        (t.finished||Promise.resolve()).catch(function(){}).finally(function(){_transitioning=false;});
-      }catch(e){_transitioning=false;_orig(id,btn);}
-    };
-  }
+  // Nota: se probó a animar el cambio de pestaña con document.startViewTransition,
+  // pero esa API lanzaba InvalidStateError de forma intermitente y dejaba la UI
+  // en estado inconsistente. Se quitó — el cambio de pestaña ahora es instantáneo
+  // (sin animación) pero fiable.
 
   document.addEventListener('click',function(e){
     var t=e.target.closest('.btn-accent, .btn-primary');
